@@ -1,6 +1,15 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+from PIL import Image
+
+icon = Image.open("logo.png")
+
+st.set_page_config(
+    page_title="Sprit Scout", 
+    page_icon=icon, # Hier nutzen wir jetzt dein Bild statt dem Emoji
+    layout="centered"
+)
 
 # 1. Seiten-Konfiguration (Optimiert für Mobile)
 st.set_page_config(page_title="Sprit Scout Mobile", page_icon="⛽", layout="centered")
