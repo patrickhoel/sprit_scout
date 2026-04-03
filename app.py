@@ -2,61 +2,65 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 
-# 1. Seiten-Konfiguration (Muss die allererste Streamlit-Zeile sein)
-st.set_page_config(page_title="Sprit Scout Pro", page_icon="⛽", layout="wide")
+# 1. Seiten-Konfiguration (Optimiert für Mobile)
+st.set_page_config(page_title="Sprit Scout Mobile", page_icon="⛽", layout="centered")
 
-st.title("⛽ Sprit Scout - Preis-Analyse")
+st.title("⛽ Sprit Scout")
 
 def lade_daten():
-    """Verbindet sich mit der DB und lädt die Daten."""
     conn = sqlite3.connect('spritpreise.db')
     df = pd.read_sql_query("SELECT * FROM preise ORDER BY zeitstempel ASC", conn)
     conn.close()
-    # Zeitstempel laden und als UTC markieren
-    df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC')
-
-    # In die lokale Zeitzone (z.B. Berlin/Wuppertal) umwandeln
-    df['zeitstempel'] = df['zeitstempel'].dt.tz_convert('Europe/Berlin')
+    
+    # Zeitstempel von UTC in lokale Zeit (Wuppertal/Berlin) umwandeln
+    df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
     return df
 
-# Daten laden
 df = lade_daten()
 
 if not df.empty:
-    # --- Bereich 1: Der Preisverlauf (Diagramm) ---
-    st.subheader("📈 Preisverlauf über die Zeit")
+    # --- BEREICH 1: QUICK-CHECK (Die 3 günstigsten) ---
+    st.subheader("🚀 Günstigste Preise aktuell")
     
-    # WICHTIG: Nur EIN selectbox-Aufruf mit einem eindeutigen Key
-    sorte = st.selectbox(
-        "Kraftstoffsorte wählen:", 
-        ["e5", "e10", "diesel"], 
-        key="sorten_auswahl"
-    )
+    # Wir filtern die aktuellsten Preise pro Tankstelle heraus
+    aktuell = df.sort_values('zeitstempel', ascending=False).drop_duplicates('tankstelle')
     
-    # pivot_table fängt Duplikate ab (nimmt den Durchschnitt, falls Zeiten identisch sind)
-    chart_data = df.pivot_table(
-        index='zeitstempel', 
-        columns='tankstelle', 
-        values=sorte, 
-        aggfunc='mean'
-    )
+    # Drei Spalten für die großen Zahlen (Metrics)
+    m1, m2, m3 = st.columns(3)
     
-    st.line_chart(chart_data)
+    with m1:
+        min_e5 = aktuell.loc[aktuell['e5'].idxmin()]
+        st.metric("E5", f"{min_e5['e5']:.2f}€", min_e5['tankstelle'])
+        
+    with m2:
+        min_e10 = aktuell.loc[aktuell['e10'].idxmin()]
+        st.metric("E10", f"{min_e10['e10']:.2f}€", min_e10['tankstelle'])
+        
+    with m3:
+        min_diesel = aktuell.loc[aktuell['diesel'].idxmin()]
+        st.metric("Diesel", f"{min_diesel['diesel']:.2f}€", min_diesel['tankstelle'])
 
     st.divider()
 
-    # --- Bereich 2: Die Tabelle ---
-    st.subheader("📋 Letzte Aktualisierungen")
-    
-    # Kopie für die Anzeige formatieren
-    display_df = df.copy()
-    display_df['zeitstempel'] = display_df['zeitstempel'].dt.strftime('%d.%m. %H:%M')
-    
-    # Spaltennamen für den Benutzer hübsch machen
-    display_df.columns = ["ID", "Zeit", "Tankstelle", "Adresse", "Benzin E5", "Benzin E10", "Diesel"]
-    
-    # Tabelle anzeigen (neueste Einträge oben)
-    st.dataframe(display_df.iloc[::-1].drop(columns=["ID"]), width='stretch')
+    # --- BEREICH 2: TABS (Für die platzsparende Analyse) ---
+    tab_chart, tab_list, tab_info = st.tabs(["📈 Verlauf", "📋 Liste", "📍 Info"])
+
+    with tab_chart:
+        sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
+        # Pivot-Tabelle für das Diagramm
+        chart_data = df.pivot_table(index='zeitstempel', columns='tankstelle', values=sorte, aggfunc='mean')
+        st.line_chart(chart_data)
+
+    with tab_list:
+        # Nur die wichtigsten Spalten anzeigen und Zeit schön formatieren
+        display_df = df.copy()
+        display_df['zeitstempel'] = display_df['zeitstempel'].dt.strftime('%H:%M')
+        # Wir zeigen die neuesten Einträge oben an
+        st.dataframe(display_df.iloc[::-1][["zeitstempel", "tankstelle", "e5", "e10", "diesel"]], width='stretch')
+
+    with tab_info:
+        st.write("**Über Sprit Scout:**")
+        st.info("Daten werden alle 30 Minuten automatisch abgefragt. Dein System ist bereit für den 12:00 Uhr Preissprung!")
 
 else:
-    st.info("Noch keine Daten vorhanden. Der Scheduler wird bald die ersten Daten sammeln.")
+    st.info("Warte auf Daten vom Scheduler...")
