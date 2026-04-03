@@ -5,21 +5,24 @@ on:
     - cron: '*/30 * * * *'  # Alle 30 Minuten
   workflow_dispatch:        # Erlaubt manuellen Start
 
+permissions:                # WICHTIG: Erlaubt dem Roboter das Schreiben
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Code auschecken
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Update auf v4 (behebt Node-Warnung)
 
       - name: Python installieren
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Update auf v5 (behebt Node-Warnung)
         with:
           python-version: '3.10'
 
       - name: Abhängigkeiten installieren
         run: |
-          pip install requests pandas
+          pip install requests pandas python-dotenv
 
       - name: Daten abrufen
         env:
@@ -31,5 +34,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add spritpreise.db
-          git commit -m "Automatische Preisaktualisierung" || echo "Keine Änderungen"
-          git push
+          # Nur committen und pushen, wenn sich die DB wirklich geändert hat
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automatische Preisaktualisierung" && git push)
