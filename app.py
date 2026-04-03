@@ -7,7 +7,7 @@ icon = Image.open("logo.png")
 
 st.set_page_config(
     page_title="Sprit Scout", 
-    page_icon=icon, # Hier nutzen wir jetzt dein Bild statt dem Emoji
+    page_icon=icon,
     layout="centered"
 )
 
