@@ -12,8 +12,6 @@ st.set_page_config(
 )
 
 # 1. Seiten-Konfiguration (Optimiert für Mobile)
-st.set_page_config(page_title="Sprit Scout Mobile", page_icon="⛽", layout="centered")
-
 st.title("⛽ Sprit Scout")
 
 def lade_daten():
