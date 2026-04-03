@@ -75,7 +75,11 @@ if not df.empty:
 
     with tab_info:
         st.write("**Über Sprit Scout:**")
-        st.info("Daten werden alle 30 Minuten automatisch abgefragt. Dein System ist bereit für den 12:00 Uhr Preissprung!")
-
+        
+        # Den neuesten Zeitstempel aus der Datenbank holen
+        letzter_abruf = df['zeitstempel'].max().strftime('%d.%m.%Y um %H:%M Uhr')
+        
+        st.info(f"🤖 Die Daten werden alle 30 Minuten automatisch im Hintergrund aktualisiert.")
+        st.success(f"⏱️ Letztes Preis-Update: **{letzter_abruf}**")
 else:
     st.info("Warte auf Daten vom Scheduler...")
