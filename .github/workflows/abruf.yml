@@ -1,0 +1,35 @@
+name: Sprit-Abruf Roboter
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Alle 30 Minuten
+  workflow_dispatch:        # Erlaubt manuellen Start
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v3
+
+      - name: Python installieren
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install requests pandas
+
+      - name: Daten abrufen
+        env:
+          TANKERKOENIG_API_KEY: ${{ secrets.TANKERKOENIG_API_KEY }}
+        run: python collector.py
+
+      - name: Datenbank speichern
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add spritpreise.db
+          git commit -m "Automatische Preisaktualisierung" || echo "Keine Änderungen"
+          git push
