@@ -1,9 +1,5 @@
 [theme]
-base = "light"
-primaryColor = "#1e5aa0"          # Das schicke Hölter-Blau
-backgroundColor = "#FFFFFF"       # Weiß für Ordnung
-secondaryBackgroundColor = "#F4F6F9" # Hellgrau für Kontrast
-textColor = "#1E1E1E"             # Fast Schwarz für Lesbarkeit
+primaryColor = "#1e5aa0"
 font = "sans serif"
 
 [server]

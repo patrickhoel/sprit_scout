@@ -12,7 +12,15 @@ st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":mater
 # CSS (Hölter Style)
 st.markdown(f"""
     <style>
-    .stMetric {{ background-color: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid {HOELTER_BLAU}; }}
+    .stMetric {{
+        /* Transparenter Hintergrund passt sich Light/Dark Mode an */
+        background-color: rgba(30, 90, 160, 0.05); 
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid {HOELTER_BLAU};
+        /* Dezentere Schatten, die im Dark Mode nicht stören */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }}
     div[data-testid="stBaseButton-pillsActive"] {{ background-color: {HOELTER_BLAU} !important; color: white !important; }}
     </style>
     """, unsafe_allow_html=True)
