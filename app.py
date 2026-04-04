@@ -10,19 +10,45 @@ HOELTER_BLAU = "#1e5aa0"
 st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":material/directions_car:", layout="wide")
 
 # CSS (Hölter Style)
+
 st.markdown(f"""
         <style>
+        /* 1. Zwingt Streamlit auf Systemebene, das Rot durch Blau zu ersetzen */
+        :root {{
+            --primary-color: {HOELTER_BLAU} !important;
+        }}
+
+        /* 2. Die Preis-Kacheln (passen sich an Hell/Dunkel an) */
         .stMetric {{
-            /* Dieser Befehl passt die Box automatisch an Hell/Dunkel an! */
             background-color: var(--secondary-background-color);
             padding: 15px;
             border-radius: 10px;
             border-left: 5px solid {HOELTER_BLAU};
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        div[data-testid="stBaseButton-pillsActive"] {{
+        
+        /* 3. Schieberegler (Slider) hart überschreiben */
+        div[data-baseweb="slider"] div[role="slider"] {{
             background-color: {HOELTER_BLAU} !important;
-            color: white !important;
+            border-color: {HOELTER_BLAU} !important;
+        }}
+        div[data-baseweb="slider"] div[data-testid="stTickBar"] > div {{
+            background-color: {HOELTER_BLAU} !important;
+        }}
+
+        /* 4. PLZ Eingabefeld (Der Rahmen, wenn man reinklickt) */
+        div[data-baseweb="input"] > div:focus-within {{
+            border-color: {HOELTER_BLAU} !important;
+            box-shadow: 0 0 0 1px {HOELTER_BLAU} !important;
+        }}
+
+        /* 5. Sorten-Auswahl (Die e5, e10, diesel Bubbles) */
+        div[data-testid="stPills"] label[data-checked="true"],
+        div[data-testid="stSegmentedControl"] label[data-checked="true"],
+        div[data-baseweb="radio"] div[aria-checked="true"] {{
+            border-color: {HOELTER_BLAU} !important;
+            color: {HOELTER_BLAU} !important;
+            background-color: rgba(30, 90, 160, 0.1) !important;
         }}
         </style>
         """, unsafe_allow_html=True)
