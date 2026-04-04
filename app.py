@@ -63,18 +63,24 @@ if not df.empty:
     with tab_chart:
         sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
         
-        # NEU: Wir berechnen den Durchschnitt und den absoluten Tiefstpreis pro Uhrzeit
-        trend_df = df.groupby('zeitstempel')[sorte].agg(['min', 'mean'])
+        # NEU: Der Zeit-Filter für den perfekten Zoom
+        zeitraum = st.radio("Ansicht:", ["Ganzer Tag", "Nur Nachmittag (ab 12 Uhr)"], horizontal=True)
         
-        # Die Spalten hübsch umbenennen für die Legende
-        trend_df = trend_df.rename(columns={
-            'min': 'Günstigste Tankstelle', 
-            'mean': 'Stadt-Durchschnitt'
-        })
+        # Wir machen eine Kopie der Daten für das Diagramm
+        anzeige_df = df.copy()
         
-        # Ein aufgeräumtes Diagramm zeichnen
-        st.line_chart(trend_df, color=["#00ff00", "#ff0000"]) # Grün für Bestpreis, Rot für Durchschnitt
-
+        if zeitraum == "Nur Nachmittag (ab 12 Uhr)":
+            # Wir schneiden den Morgen (und den riesigen Preissprung) ab.
+            # Dadurch skaliert die Y-Achse automatisch riesig an die kleinen Cent-Beträge heran!
+            anzeige_df = anzeige_df[anzeige_df['zeitstempel'].dt.hour >= 12]
+            
+        # Durchschnitt und Bestpreis berechnen
+        trend_df = anzeige_df.groupby('zeitstempel')[sorte].agg(['min', 'mean'])
+        trend_df = trend_df.rename(columns={'min': 'Günstigste Tankstelle', 'mean': 'Stadt-Durchschnitt'})
+        
+        # Aufgeräumtes Diagramm zeichnen
+        st.line_chart(trend_df, color=["#00ff00", "#ff0000"])
+        
     with tab_list:
         # Nur die wichtigsten Spalten anzeigen und Zeit schön formatieren
         display_df = df.copy()
