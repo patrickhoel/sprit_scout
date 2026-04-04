@@ -7,7 +7,7 @@ import numpy as np
 
 # --- CONFIG ---
 HOELTER_BLAU = "#1e5aa0"
-st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon="⛽", layout="wide")
+st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":material/directions_car:", layout="wide")
 
 # CSS (Hölter Style)
 st.markdown(f"""
@@ -38,10 +38,10 @@ def lade_daten():
 c_logo, c_title = st.columns([1, 10])
 with c_logo:
     try: st.image(Image.open("logo.png"), width=70)
-    except: st.write("⛽")
+    except: st.write(":material/directions_car:")
 with c_title: st.title("Sprit Scout")
 
-menue = st.selectbox("Navigation", ["✦ Übersicht", "◇ Analyse", "§ Impressum", "⛨ Datenschutz"])
+menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "§ Impressum", "⛨ Datenschutz"])
 st.divider()
 
 df = lade_daten()
@@ -54,17 +54,19 @@ if not df.empty:
         c1, c2, c3 = st.columns(3)
         for i, s in enumerate(['e5', 'e10', 'diesel']):
             m = aktuell.loc[aktuell[s].idxmin()]
+            zeit_str = m['zeitstempel'].strftime('%H:%M')
             with [c1, c2, c3][i]:
                 st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
-                st.caption(f"📍 {m['tankstelle']}")
+                # Hier nutzen wir das schlichte Material-Icon
+                st.caption(f":material/location_on: {m['tankstelle']} \n\n:material/schedule: Stand: {zeit_str} Uhr")
 
-    elif menue == "◇ Analyse":
-        st.subheader("Umkreis-Suche")
+    elif menue == "◎ Umkreissuche":
+        st.subheader("Umkreissuche")
         
         # 1. Filtereinstellungen
         col_plz, col_rad = st.columns([2, 2])
         with col_plz:
-            plz = st.text_input("Deine PLZ:", placeholder="z.B. 42277")
+            plz = st.text_input("Deine PLZ:", placeholder="z.B. 42281")
         with col_rad:
             radius_km = st.select_slider("Umkreis (km):", options=[2, 5, 10, 15, 30], value=10)
         
@@ -96,17 +98,21 @@ if not df.empty:
             st.caption(f"✓ {len(gefiltert)} Tankstellen innerhalb von {radius_km} km gefunden. Günstigste zuerst.")
             
             for _, row in gefiltert.iterrows():
+                zeit_str = row['zeitstempel'].strftime('%H:%M')
+                
                 with st.container():
                     c1, c2, c3 = st.columns([4, 1, 1])
                     with c1:
                         st.markdown(f"**{row['tankstelle']}**")
-                        st.caption(f"{row['distanz']:.1f} km entfernt")
+                        # Das Icon fügt sich nahtlos in den Text ein
+                        st.caption(f"{row['distanz']:.1f} km entfernt • :material/schedule: {zeit_str} Uhr")
                     with c2:
                         st.metric("", f"{row[sorte]:.2f}€", label_visibility="collapsed")
                     with c3:
                         url = f"https://www.google.com/maps/dir/?api=1&destination={row['lat']},{row['lng']}"
-                        st.link_button("⛽", url, use_container_width=True)
+                        st.link_button(":material/navigation: Route berechnen", url, use_container_width=True)
                     st.divider()
+                    
         else:
             st.info("Bitte gib eine gültige Wuppertaler PLZ ein, um den Radius-Check zu nutzen.")
 
