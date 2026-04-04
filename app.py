@@ -1,10 +1,17 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+from PIL import Image
+
+icon = Image.open("logo.png")
+
+st.set_page_config(
+    page_title="Sprit Scout", 
+    page_icon=icon,
+    layout="centered"
+)
 
 # 1. Seiten-Konfiguration (Optimiert für Mobile)
-st.set_page_config(page_title="Sprit Scout Mobile", page_icon="⛽", layout="centered")
-
 st.title("⛽ Sprit Scout")
 
 def lade_daten():
@@ -30,17 +37,25 @@ if not df.empty:
     
     with m1:
         min_e5 = aktuell.loc[aktuell['e5'].idxmin()]
-        st.metric("E5", f"{min_e5['e5']:.2f}€", min_e5['tankstelle'])
+        st.metric("E5", f"{min_e5['e5']:.2f}€")
+        st.caption(f"📍 {min_e5['tankstelle']}")
+        # Google Maps Link
+        url_e5 = f"https://www.google.com/maps/search/?api=1&query={min_e5['tankstelle'].replace(' ', '+')}+Wuppertal"
+        st.link_button("Anfahrt", url_e5, use_container_width=True)
         
     with m2:
         min_e10 = aktuell.loc[aktuell['e10'].idxmin()]
-        st.metric("E10", f"{min_e10['e10']:.2f}€", min_e10['tankstelle'])
+        st.metric("E10", f"{min_e10['e10']:.2f}€")
+        st.caption(f"📍 {min_e10['tankstelle']}")
+        url_e10 = f"https://www.google.com/maps/search/?api=1&query={min_e10['tankstelle'].replace(' ', '+')}+Wuppertal"
+        st.link_button("Anfahrt", url_e10, use_container_width=True)
         
     with m3:
         min_diesel = aktuell.loc[aktuell['diesel'].idxmin()]
-        st.metric("Diesel", f"{min_diesel['diesel']:.2f}€", min_diesel['tankstelle'])
-
-    st.divider()
+        st.metric("Diesel", f"{min_diesel['diesel']:.2f}€")
+        st.caption(f"📍 {min_diesel['tankstelle']}")
+        url_diesel = f"https://www.google.com/maps/search/?api=1&query={min_diesel['tankstelle'].replace(' ', '+')}+Wuppertal"
+        st.link_button("Anfahrt", url_diesel, use_container_width=True)
 
     # --- BEREICH 2: TABS (Für die platzsparende Analyse) ---
     tab_chart, tab_list, tab_info = st.tabs(["📈 Verlauf", "📋 Liste", "📍 Info"])
@@ -60,7 +75,11 @@ if not df.empty:
 
     with tab_info:
         st.write("**Über Sprit Scout:**")
-        st.info("Daten werden alle 30 Minuten automatisch abgefragt. Dein System ist bereit für den 12:00 Uhr Preissprung!")
-
+        
+        # Den neuesten Zeitstempel aus der Datenbank holen
+        letzter_abruf = df['zeitstempel'].max().strftime('%d.%m.%Y um %H:%M Uhr')
+        
+        st.info(f"🤖 Die Daten werden alle 30 Minuten automatisch im Hintergrund aktualisiert.")
+        st.success(f"⏱️ Letztes Preis-Update: **{letzter_abruf}**")
 else:
     st.info("Warte auf Daten vom Scheduler...")

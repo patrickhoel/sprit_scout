@@ -17,10 +17,17 @@ def get_api_preise():
     print("Frage Tankerkönig API ab...")
     url = f"https://creativecommons.tankerkoenig.de/json/list.php?lat={LAT}&lng={LNG}&rad={RADIUS}&sort=dist&type=all&apikey={API_KEY}"
     
+    # NEU: Wir tarnen unser Python-Skript als normalen Webbrowser
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    
     try:
-        response = requests.get(url)
-        response.raise_for_status() # Wirft einen Fehler, wenn die Internetverbindung fehlschlägt
+        # NEU: Wir senden die Tarnkappe (headers) bei der Anfrage mit
+        response = requests.get(url, headers=headers)
+        response.raise_for_status() 
         daten = response.json()
+        
         
         if daten.get("ok"):
             tankstellen_daten = []
