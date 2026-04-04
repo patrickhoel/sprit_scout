@@ -2,101 +2,113 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from PIL import Image
-
-# --- HIER IMPORTIEREN WIR DEINE NEUE DATEI ---
 import rechtliches
+import numpy as np
 
-# Icon laden (falls vorhanden)
-try:
-    icon = Image.open("logo.png")
-    st.set_page_config(page_title="Sprit Scout", page_icon=icon, layout="centered")
-except FileNotFoundError:
-    st.set_page_config(page_title="Sprit Scout", layout="centered")
+# --- CONFIG ---
+HOELTER_BLAU = "#1e5aa0"
+st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon="⛽", layout="wide")
+
+# CSS (Hölter Style)
+st.markdown(f"""
+    <style>
+    .stMetric {{ background-color: #f8fafc; padding: 15px; border-radius: 10px; border-left: 5px solid {HOELTER_BLAU}; }}
+    div[data-testid="stBaseButton-pillsActive"] {{ background-color: {HOELTER_BLAU} !important; color: white !important; }}
+    </style>
+    """, unsafe_allow_html=True)
+
+def berechne_distanz(lat1, lon1, lat2, lon2):
+    if pd.isna(lat1) or pd.isna(lon1) or pd.isna(lat2) or pd.isna(lon2): return 999.0
+    r = 6371 
+    phi1, phi2 = np.radians(lat1), np.radians(lat2)
+    dphi = np.radians(lat2 - lat1)
+    dlambda = np.radians(lon2 - lon1)
+    a = np.sin(dphi/2)**2 + np.cos(phi1) * np.cos(phi2) * np.sin(dlambda/2)**2
+    return 2 * r * np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
 def lade_daten():
     conn = sqlite3.connect('spritpreise.db')
-    df = pd.read_sql_query("SELECT * FROM preise ORDER BY zeitstempel ASC", conn)
+    df = pd.read_sql_query("SELECT * FROM preise", conn)
     conn.close()
-    
-    # Zeitstempel von UTC in lokale Zeit umwandeln
-    df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
+    if not df.empty:
+        df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
     return df
 
-# --- MENÜ ALS DROPDOWN ---
-menue = st.selectbox(
-    "Navigation", 
-    ["⛽ Sprit Scout", "⚖️ Impressum", "🛡️ Datenschutz"]
-)
+# --- HEADER ---
+c_logo, c_title = st.columns([1, 10])
+with c_logo:
+    try: st.image(Image.open("logo.png"), width=70)
+    except: st.write("⛽")
+with c_title: st.title("Sprit Scout")
 
+menue = st.selectbox("Navigation", ["✦ Übersicht", "◇ Analyse", "§ Impressum", "⛨ Datenschutz"])
 st.divider()
 
-# --- BEREICH 1: DEINE APP ---
-if menue == "⛽ Sprit Scout":
-    st.title("⛽ Sprit Scout")
+df = lade_daten()
 
-    df = lade_daten()
+if not df.empty:
+    aktuell = df.sort_values('zeitstempel', ascending=False).drop_duplicates('tankstelle').copy()
 
-    if not df.empty:
-        st.subheader("🚀 Günstigste Preise aktuell")
-        aktuell = df.sort_values('zeitstempel', ascending=False).drop_duplicates('tankstelle')
+    if menue == "✦ Übersicht":
+        st.subheader("Die absoluten Bestpreise")
+        c1, c2, c3 = st.columns(3)
+        for i, s in enumerate(['e5', 'e10', 'diesel']):
+            m = aktuell.loc[aktuell[s].idxmin()]
+            with [c1, c2, c3][i]:
+                st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
+                st.caption(f"📍 {m['tankstelle']}")
+
+    elif menue == "◇ Analyse":
+        st.subheader("Umkreis-Suche")
         
-        m1, m2, m3 = st.columns(3)
+        # 1. Filtereinstellungen
+        col_plz, col_rad = st.columns([2, 2])
+        with col_plz:
+            plz = st.text_input("Deine PLZ:", placeholder="z.B. 42277")
+        with col_rad:
+            radius_km = st.select_slider("Umkreis (km):", options=[2, 5, 10, 15, 30], value=10)
         
-        with m1:
-            min_e5 = aktuell.loc[aktuell['e5'].idxmin()]
-            st.metric("E5", f"{min_e5['e5']:.2f}€")
-            st.caption(f"📍 {min_e5['tankstelle']}")
-            url_e5 = f"https://www.google.com/maps/search/?api=1&query={min_e5['tankstelle'].replace(' ', '+')}+Wuppertal"
-            st.link_button("Anfahrt", url_e5, use_container_width=True)
+        sorte = st.pills("Sorte:", ["e5", "e10", "diesel"], default="e5")
+
+        plz_map = {
+            "42103": (51.255, 7.149), "42105": (51.264, 7.145), "42107": (51.272, 7.144),
+            "42109": (51.285, 7.142), "42111": (51.298, 7.135), "42113": (51.276, 7.114),
+            "42115": (51.258, 7.118), "42117": (51.245, 7.126), "42119": (51.242, 7.155),
+            "42275": (51.273, 7.188), "42277": (51.286, 7.225), "42279": (51.299, 7.215),
+            "42281": (51.288, 7.195), "42283": (51.271, 7.205), "42285": (51.261, 7.185),
+            "42287": (51.245, 7.195), "42289": (51.238, 7.225), "42327": (51.235, 7.075),
+            "42329": (51.231, 7.085), "42349": (51.205, 7.135), "42369": (51.228, 7.215),
+            "42389": (51.268, 7.265), "42399": (51.215, 7.265)
+        }
+        
+        if plz in plz_map:
+            u_lat, u_lng = plz_map[plz]
+            # Entfernung berechnen
+            aktuell['distanz'] = aktuell.apply(lambda r: berechne_distanz(u_lat, u_lng, r['lat'], r['lng']), axis=1)
             
-        with m2:
-            min_e10 = aktuell.loc[aktuell['e10'].idxmin()]
-            st.metric("E10", f"{min_e10['e10']:.2f}€")
-            st.caption(f"📍 {min_e10['tankstelle']}")
-            url_e10 = f"https://www.google.com/maps/search/?api=1&query={min_e10['tankstelle'].replace(' ', '+')}+Wuppertal"
-            st.link_button("Anfahrt", url_e10, use_container_width=True)
+            # --- DER FILTER-TRICK ---
+            # Nur Tankstellen im gewählten Radius behalten
+            gefiltert = aktuell[aktuell['distanz'] <= radius_km].copy()
             
-        with m3:
-            min_diesel = aktuell.loc[aktuell['diesel'].idxmin()]
-            st.metric("Diesel", f"{min_diesel['diesel']:.2f}€")
-            st.caption(f"📍 {min_diesel['tankstelle']}")
-            url_diesel = f"https://www.google.com/maps/search/?api=1&query={min_diesel['tankstelle'].replace(' ', '+')}+Wuppertal"
-            st.link_button("Anfahrt", url_diesel, use_container_width=True)
-
-        tab_chart, tab_list, tab_info = st.tabs(["📈 Verlauf", "📋 Liste", "📍 Info"])
-
-        with tab_chart:
-            sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
+            # Jetzt nach PREIS sortieren (günstigste zuerst)
+            gefiltert = gefiltert.sort_values(sorte)
             
-            # Pivot-Daten vorbereiten
-            chart_data = df.pivot_table(index='zeitstempel', columns='tankstelle', values=sorte, aggfunc='mean')
+            st.caption(f"✓ {len(gefiltert)} Tankstellen innerhalb von {radius_km} km gefunden. Günstigste zuerst.")
             
-            # --- NEU: TANKSTELLEN-FILTER ---
-            alle_tanken = chart_data.columns.tolist()
-            # Wir wählen standardmäßig die ersten zwei aus der Liste aus
-            auswahl = st.multiselect("Tankstellen vergleichen:", alle_tanken, default=alle_tanken[:2])
-            
-            if auswahl:
-                st.line_chart(chart_data[auswahl])
-            else:
-                st.warning("Wähle mindestens eine Tankstelle aus, um den Verlauf zu sehen.")
+            for _, row in gefiltert.iterrows():
+                with st.container():
+                    c1, c2, c3 = st.columns([4, 1, 1])
+                    with c1:
+                        st.markdown(f"**{row['tankstelle']}**")
+                        st.caption(f"{row['distanz']:.1f} km entfernt")
+                    with c2:
+                        st.metric("", f"{row[sorte]:.2f}€", label_visibility="collapsed")
+                    with c3:
+                        url = f"https://www.google.com/maps/dir/?api=1&destination={row['lat']},{row['lng']}"
+                        st.link_button("⛽", url, use_container_width=True)
+                    st.divider()
+        else:
+            st.info("Bitte gib eine gültige Wuppertaler PLZ ein, um den Radius-Check zu nutzen.")
 
-        with tab_list:
-            display_df = df.copy()
-            display_df['zeitstempel'] = display_df['zeitstempel'].dt.strftime('%H:%M')
-            st.dataframe(display_df.iloc[::-1][["zeitstempel", "tankstelle", "e5", "e10", "diesel"]], width='stretch')
-
-        with tab_info:
-            st.write("**Über Sprit Scout:**")
-            letzter_abruf = df['zeitstempel'].max().strftime('%d.%m.%Y um %H:%M Uhr')
-            st.info(f"🤖 Die Daten werden alle 30 Minuten automatisch im Hintergrund aktualisiert.")
-            st.success(f"⏱️ Letztes Preis-Update: **{letzter_abruf}**")
-    else:
-        st.info("Warte auf Daten vom Scheduler...")
-
-# --- BEREICH 2 & 3: RECHTLICHES AUSGELAGERT ---
-elif menue == "⚖️ Impressum":
-    rechtliches.zeige_impressum()
-
-elif menue == "🛡️ Datenschutz":
-    rechtliches.zeige_datenschutz()
+    elif menue == "§ Impressum": rechtliches.zeige_impressum()
+    elif menue == "⛨ Datenschutz": rechtliches.zeige_datenschutz()

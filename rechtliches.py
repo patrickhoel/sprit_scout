@@ -3,15 +3,15 @@ import streamlit as st
 def zeige_impressum():
     st.title("Impressum")
     st.markdown("""
-    **Patrick Hölter** 
-    Osteroder Str. 21  
+    **Patrick Hölter**<br>
+    Osteroder Str. 21<br>
     42277 Wuppertal  
 
     **Kontakt** Telefon: +491746890706  
     E-Mail: patrick@hoelter-digital.de  
 
     Quelle: [https://www.e-recht24.de](https://www.e-recht24.de)
-    """)
+    """, unsafe_allow_html=True) # Wichtig für das <br>
 
 def zeige_datenschutz():
     st.title("Datenschutzerklärung")

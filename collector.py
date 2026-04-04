@@ -1,80 +1,78 @@
-import sqlite3
-import requests
 import os
+import requests
+import sqlite3
+from datetime import datetime
 from dotenv import load_dotenv
 
-# Lädt den API-Key aus deiner .env Datei
+# 1. Key laden
 load_dotenv()
-API_KEY = os.getenv("TANKERKOENIG_API_KEY")          
+API_KEY = os.getenv("TANKERKOENIG_API_KEY")
 
-# Hier deine Koordinaten und den Suchradius in Kilometern eintragen
-LAT = 51.285889    # Breitengrad (Latitude) - hier Beispiel Wuppertal
-LNG = 7.229750    # Längengrad (Longitude) - hier Beispiel Wuppertal
-RADIUS = 10      # 10 Kilometer Umkreis
+if not API_KEY:
+    print("❌ FEHLER: Kein API_KEY in der .env gefunden!")
+    exit()
 
-def get_api_preise():
-    """Holt die echten Daten von der Tankerkönig API."""
-    print("Frage Tankerkönig API ab...")
-    url = f"https://creativecommons.tankerkoenig.de/json/list.php?lat={LAT}&lng={LNG}&rad={RADIUS}&sort=dist&type=all&apikey={API_KEY}"
+# --- KONFIGURATION ---
+# Wuppertal Zentrum
+LAT = 51.2562
+LNG = 7.1508
+RADIUS = 15
+
+def daten_sammeln():
+    # KORRIGIERTE URL: Die offizielle Tankerkönig-Schnittstelle
+    url = f"https://creativecommons.tankerkoenig.de/json/list.php?lat={LAT}&lng={LNG}&rad={RADIUS}&type=all&apikey={API_KEY}"
     
-    # NEU: Wir tarnen unser Python-Skript als normalen Webbrowser
+    # CHROME DISGUISE: Wir tarnen uns als ganz normaler Windows-Browser
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
     }
-    
-    try:
-        # NEU: Wir senden die Tarnkappe (headers) bei der Anfrage mit
-        response = requests.get(url, headers=headers)
-        response.raise_for_status() 
-        daten = response.json()
-        
-        
-        if daten.get("ok"):
-            tankstellen_daten = []
-            for t in daten.get("stations", []):
-                # Wir nehmen nur Tankstellen, die gerade offen sind
-                if t.get("isOpen"):
-                    # Name und Marke zusammenbauen, damit es in der Auswertung hübscher aussieht
-                    marke = t.get("brand", "").strip()
-                    name = t.get("name", "").strip()
-                    vollständiger_name = f"{marke} ({name})" if marke else name
 
-                    tankstellen_daten.append({
-                        "name": vollständiger_name,
-                        "adresse": f"{t.get('street')} {t.get('houseNumber')}",
-                        "e5": t.get("e5"),
-                        "e10": t.get("e10"),
-                        "diesel": t.get("diesel")
-                    })
-            return tankstellen_daten
+    try:
+        print(f"📡 Starte Abfrage an Tankerkönig...")
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            print(f"❌ Server-Fehler {response.status_code}: Zugriff verweigert.")
+            print("Mögliche Ursachen: API-Key noch nicht aktiv (dauert bis zu 24h) oder falscher Endpoint.")
+            return
+
+        data = response.json()
+        
+        if data.get('ok'):
+            conn = sqlite3.connect('spritpreise.db')
+            cursor = conn.cursor()
+            zeitstempel = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            count = 0
+            for station in data.get('stations', []):
+                name = station.get('name')
+                e5 = station.get('e5')
+                e10 = station.get('e10')
+                diesel = station.get('diesel')
+                lat = station.get('lat')
+                lng = station.get('lng')
+                
+                # Wir speichern nur, wenn die API echte Preise liefert
+                if all(v is not None and isinstance(v, (int, float)) and v > 0 for v in [e5, e10, diesel]):
+                    cursor.execute('''
+                        INSERT INTO preise (zeitstempel, tankstelle, e5, e10, diesel, lat, lng)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (zeitstempel, name, e5, e10, diesel, lat, lng))
+                    count += 1
+            
+            conn.commit()
+            print(f"✅ [{zeitstempel}] {count} Tankstellen mit Koordinaten gespeichert.")
+            
+            # Housekeeping: Daten älter als 30 Tage löschen
+            cursor.execute("DELETE FROM preise WHERE zeitstempel < datetime('now', '-30 days')")
+            conn.commit()
+            conn.close()
         else:
-            print("Fehler von der API:", daten.get("message"))
-            return []
+            print(f"⚠️ API-Fehler: {data.get('message', 'Unbekannter Fehler')}")
             
     except Exception as e:
-        print(f"Fehler beim Abrufen der API: {e}")
-        return []
+        print(f"❌ Kritischer Fehler: {e}")
 
-def speichere_in_db(daten):
-    """Speichert die übergebenen Daten in unsere SQLite-Datenbank."""
-    if not daten:
-        print("Keine Daten zum Speichern vorhanden.")
-        return
-
-    conn = sqlite3.connect('spritpreise.db')
-    cursor = conn.cursor()
-    
-    for eintrag in daten:
-        # Das ? schützt unsere Datenbank vor fehlerhaften Eingaben
-        cursor.execute('''
-            INSERT INTO preise (tankstelle, adresse, e5, e10, diesel)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (eintrag['name'], eintrag['adresse'], eintrag['e5'], eintrag['e10'], eintrag['diesel']))
-    
-    conn.commit()
-    conn.close()
-    print(f"{len(daten)} echte Preis-Einträge erfolgreich in die Datenbank geschrieben!")
-
-if __name__ == '__main__':
-    neue_daten = get_api_preise()
-    speichere_in_db(neue_daten)
+if __name__ == "__main__":
+    daten_sammeln()
