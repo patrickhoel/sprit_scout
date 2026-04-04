@@ -13,12 +13,7 @@ st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":mater
 
 st.markdown(f"""
         <style>
-        /* 1. Zwingt Streamlit auf Systemebene, das Rot durch Blau zu ersetzen */
-        :root {{
-            --primary-color: {HOELTER_BLAU} !important;
-        }}
-
-        /* 2. Die Preis-Kacheln (passen sich an Hell/Dunkel an) */
+        /* 1. Die Kacheln (die waren ja schon perfekt) */
         .stMetric {{
             background-color: var(--secondary-background-color);
             padding: 15px;
@@ -26,29 +21,42 @@ st.markdown(f"""
             border-left: 5px solid {HOELTER_BLAU};
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        
-        /* 3. Schieberegler (Slider) hart überschreiben */
-        div[data-baseweb="slider"] div[role="slider"] {{
-            background-color: {HOELTER_BLAU} !important;
-            border-color: {HOELTER_BLAU} !important;
-        }}
-        div[data-baseweb="slider"] div[data-testid="stTickBar"] > div {{
-            background-color: {HOELTER_BLAU} !important;
-        }}
 
-        /* 4. PLZ Eingabefeld (Der Rahmen, wenn man reinklickt) */
+        /* 2. Dropdown-Menü & PLZ-Feld (Fokus-Rahmen) */
+        div[data-baseweb="select"] > div:focus-within,
         div[data-baseweb="input"] > div:focus-within {{
             border-color: {HOELTER_BLAU} !important;
             box-shadow: 0 0 0 1px {HOELTER_BLAU} !important;
         }}
 
-        /* 5. Sorten-Auswahl (Die e5, e10, diesel Bubbles) */
+        /* 3. Schieberegler (Slider) */
+        /* Der farbige Balken links vom Knopf */
+        div[data-testid="stSlider"] div[data-baseweb="slider"] > div > div > div:first-child {{
+            background-color: {HOELTER_BLAU} !important;
+        }}
+        /* Der Knopf selbst */
+        div[data-testid="stSlider"] div[role="slider"] {{
+            background-color: {HOELTER_BLAU} !important;
+            border-color: {HOELTER_BLAU} !important;
+        }}
+        /* Die schwebende Zahl (die "10") über dem Knopf */
+        div[data-testid="stSlider"] div[role="slider"] > div {{
+            color: {HOELTER_BLAU} !important;
+        }}
+
+        /* 4. Die Sorte-Auswahl (e5, e10, diesel) */
+        /* Rahmen und Hintergrund */
         div[data-testid="stPills"] label[data-checked="true"],
         div[data-testid="stSegmentedControl"] label[data-checked="true"],
         div[data-baseweb="radio"] div[aria-checked="true"] {{
             border-color: {HOELTER_BLAU} !important;
-            color: {HOELTER_BLAU} !important;
             background-color: rgba(30, 90, 160, 0.1) !important;
+        }}
+        /* Die Schriftfarbe im Button hart überschreiben */
+        div[data-testid="stPills"] label[data-checked="true"] *,
+        div[data-testid="stSegmentedControl"] label[data-checked="true"] *,
+        div[data-baseweb="radio"] div[aria-checked="true"] * {{
+            color: {HOELTER_BLAU} !important;
         }}
         </style>
         """, unsafe_allow_html=True)
