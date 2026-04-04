@@ -67,8 +67,19 @@ if menue == "⛽ Sprit Scout":
 
         with tab_chart:
             sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
+            
+            # Pivot-Daten vorbereiten
             chart_data = df.pivot_table(index='zeitstempel', columns='tankstelle', values=sorte, aggfunc='mean')
-            st.line_chart(chart_data)
+            
+            # --- NEU: TANKSTELLEN-FILTER ---
+            alle_tanken = chart_data.columns.tolist()
+            # Wir wählen standardmäßig die ersten zwei aus der Liste aus
+            auswahl = st.multiselect("Tankstellen vergleichen:", alle_tanken, default=alle_tanken[:2])
+            
+            if auswahl:
+                st.line_chart(chart_data[auswahl])
+            else:
+                st.warning("Wähle mindestens eine Tankstelle aus, um den Verlauf zu sehen.")
 
         with tab_list:
             display_df = df.copy()
