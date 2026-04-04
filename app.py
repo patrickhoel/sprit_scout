@@ -7,7 +7,7 @@ import numpy as np
 
 # --- CONFIG ---
 HOELTER_BLAU = "#1e5aa0"
-st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":material/directions_car:", layout="wide")
+st.set_page_config(page_title="Wuppertal Tankt | Hölter Digital", page_icon=":material/directions_car:", layout="wide")
 
 # CSS (Hölter Style)
 
@@ -85,7 +85,7 @@ c_logo, c_title = st.columns([1, 10])
 with c_logo:
     try: st.image(Image.open("logo.png"), width=70)
     except: st.write(":material/directions_car:")
-with c_title: st.title("Sprit Scout")
+with c_title: st.title("Wuppertal Tankt")
 
 menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "§ Impressum", "⛨ Datenschutz"])
 st.divider()
