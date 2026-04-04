@@ -3,98 +3,77 @@ import pandas as pd
 import sqlite3
 from PIL import Image
 
-icon = Image.open("logo.png")
+# Icon laden (falls vorhanden, sonst Zeile anpassen/entfernen)
+try:
+    icon = Image.open("logo.png")
+    st.set_page_config(page_title="Sprit Scout", page_icon=icon, layout="centered")
+except FileNotFoundError:
+    st.set_page_config(page_title="Sprit Scout", layout="centered")
 
-st.set_page_config(
-    page_title="Sprit Scout", 
-    page_icon=icon,
-    layout="centered"
+# --- MENÜ IN DER SEITENLEISTE ---
+menue = st.sidebar.radio(
+    "Navigation", 
+    ["⛽ Sprit Scout", "⚖️ Impressum", "🛡️ Datenschutz"]
 )
 
-# 1. Seiten-Konfiguration (Optimiert für Mobile)
-st.title("⛽ Sprit Scout")
-
-def lade_daten():
-    conn = sqlite3.connect('spritpreise.db')
-    df = pd.read_sql_query("SELECT * FROM preise ORDER BY zeitstempel ASC", conn)
-    conn.close()
+# --- BEREICH 1: DEINE APP ---
+if menue == "⛽ Sprit Scout":
+    st.title("⛽ Sprit Scout")
+    st.write("Hier kommt dein gesamter Code für die Benzinpreise rein...")
     
-    # Zeitstempel von UTC in lokale Zeit (Wuppertal/Berlin) umwandeln
-    df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
-    return df
+    # HIER FÜGST DU DEINEN BISHERIGEN CODE EIN (lade_daten() etc.)
 
-df = lade_daten()
 
-if not df.empty:
-    # --- BEREICH 1: QUICK-CHECK (Die 3 günstigsten) ---
-    st.subheader("🚀 Günstigste Preise aktuell")
-    
-    # Wir filtern die aktuellsten Preise pro Tankstelle heraus
-    aktuell = df.sort_values('zeitstempel', ascending=False).drop_duplicates('tankstelle')
-    
-    # Drei Spalten für die großen Zahlen (Metrics)
-    m1, m2, m3 = st.columns(3)
-    
-    with m1:
-        min_e5 = aktuell.loc[aktuell['e5'].idxmin()]
-        st.metric("E5", f"{min_e5['e5']:.2f}€")
-        st.caption(f"📍 {min_e5['tankstelle']}")
-        # Google Maps Link
-        url_e5 = f"https://www.google.com/maps/search/?api=1&query={min_e5['tankstelle'].replace(' ', '+')}+Wuppertal"
-        st.link_button("Anfahrt", url_e5, use_container_width=True)
-        
-    with m2:
-        min_e10 = aktuell.loc[aktuell['e10'].idxmin()]
-        st.metric("E10", f"{min_e10['e10']:.2f}€")
-        st.caption(f"📍 {min_e10['tankstelle']}")
-        url_e10 = f"https://www.google.com/maps/search/?api=1&query={min_e10['tankstelle'].replace(' ', '+')}+Wuppertal"
-        st.link_button("Anfahrt", url_e10, use_container_width=True)
-        
-    with m3:
-        min_diesel = aktuell.loc[aktuell['diesel'].idxmin()]
-        st.metric("Diesel", f"{min_diesel['diesel']:.2f}€")
-        st.caption(f"📍 {min_diesel['tankstelle']}")
-        url_diesel = f"https://www.google.com/maps/search/?api=1&query={min_diesel['tankstelle'].replace(' ', '+')}+Wuppertal"
-        st.link_button("Anfahrt", url_diesel, use_container_width=True)
+# --- BEREICH 2: IMPRESSUM ---
+elif menue == "⚖️ Impressum":
+    st.title("Impressum")
+    st.markdown("""
+    **Patrick Hölter** Osteroder Str. 21  
+    42277 Wuppertal  
 
-    # --- BEREICH 2: TABS (Für die platzsparende Analyse) ---
-    tab_chart, tab_list, tab_info = st.tabs(["📈 Verlauf", "📋 Liste", "📍 Info"])
+    **Kontakt** Telefon: +491746890706  
+    E-Mail: patrick@hoelter-digital.de  
 
-    with tab_chart:
-        sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
-        
-        # NEU: Der Zeit-Filter für den perfekten Zoom
-        zeitraum = st.radio("Ansicht:", ["Ganzer Tag", "Nur Nachmittag (ab 12 Uhr)"], horizontal=True)
-        
-        # Wir machen eine Kopie der Daten für das Diagramm
-        anzeige_df = df.copy()
-        
-        if zeitraum == "Nur Nachmittag (ab 12 Uhr)":
-            # Wir schneiden den Morgen (und den riesigen Preissprung) ab.
-            # Dadurch skaliert die Y-Achse automatisch riesig an die kleinen Cent-Beträge heran!
-            anzeige_df = anzeige_df[anzeige_df['zeitstempel'].dt.hour >= 12]
-            
-        # Durchschnitt und Bestpreis berechnen
-        trend_df = anzeige_df.groupby('zeitstempel')[sorte].agg(['min', 'mean'])
-        trend_df = trend_df.rename(columns={'min': 'Günstigste Tankstelle', 'mean': 'Stadt-Durchschnitt'})
-        
-        # Aufgeräumtes Diagramm zeichnen
-        st.line_chart(trend_df, color=["#00ff00", "#ff0000"])
-        
-    with tab_list:
-        # Nur die wichtigsten Spalten anzeigen und Zeit schön formatieren
-        display_df = df.copy()
-        display_df['zeitstempel'] = display_df['zeitstempel'].dt.strftime('%H:%M')
-        # Wir zeigen die neuesten Einträge oben an
-        st.dataframe(display_df.iloc[::-1][["zeitstempel", "tankstelle", "e5", "e10", "diesel"]], width='stretch')
+    Quelle: [https://www.e-recht24.de](https://www.e-recht24.de)
+    """)
 
-    with tab_info:
-        st.write("**Über Sprit Scout:**")
-        
-        # Den neuesten Zeitstempel aus der Datenbank holen
-        letzter_abruf = df['zeitstempel'].max().strftime('%d.%m.%Y um %H:%M Uhr')
-        
-        st.info(f"🤖 Die Daten werden alle 30 Minuten automatisch im Hintergrund aktualisiert.")
-        st.success(f"⏱️ Letztes Preis-Update: **{letzter_abruf}**")
-else:
-    st.info("Warte auf Daten vom Scheduler...")
+
+# --- BEREICH 3: DATENSCHUTZ ---
+elif menue == "🛡️ Datenschutz":
+    st.title("Datenschutzerklärung")
+    st.markdown("""
+    ### 1. Datenschutz auf einen Blick
+    **Allgemeine Hinweise** Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. 
+
+    **Wer ist verantwortlich für die Datenerfassung auf dieser Website?** Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Dessen Kontaktdaten können Sie dem Abschnitt „Hinweis zur Verantwortlichen Stelle“ in dieser Datenschutzerklärung entnehmen.
+
+    ### 2. Hosting
+    **Hetzner** Wir hosten die Inhalte unserer Website bei folgendem Anbieter: Anbieter ist die Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen (nachfolgend Hetzner). Details entnehmen Sie der Datenschutzerklärung von Hetzner: [https://www.hetzner.com/de/legal/privacy-policy/](https://www.hetzner.com/de/legal/privacy-policy/). Die Verwendung von Hetzner erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.
+
+    ### 3. Allgemeine Hinweise und Pflichtinformationen
+    **Datenschutz** Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.
+
+    **Hinweis zur verantwortlichen Stelle** Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:  
+    Patrick Hölter  
+    Osteroder Str. 21  
+    42277 Wuppertal  
+
+    Telefon: 01746890706  
+    E-Mail: patrick@hoelter-digital.de  
+
+    ### 4. Datenerfassung auf dieser Website
+    **Server-Log-Dateien** Der Provider der Seiten erhebt und speichert automatisch Informationen in so genannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind:
+    * Browsertyp und Browserversion
+    * verwendetes Betriebssystem
+    * Referrer URL
+    * Hostname des zugreifenden Rechners
+    * Uhrzeit der Serveranfrage
+    * IP-Adresse
+
+    Eine Zusammenführung dieser Daten mit anderen Datenquellen wird nicht vorgenommen. Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.
+
+    ### 5. Plugins und Tools
+    **Google Maps** Diese Seite nutzt den Kartendienst Google Maps. Anbieter ist die Google Ireland Limited („Google“), Gordon House, Barrow Street, Dublin 4, Irland. Mit Hilfe dieses Dienstes können wir Kartenmaterial auf unserer Website einbinden. Zur Nutzung der Funktionen von Google Maps ist es notwendig, Ihre IP-Adresse zu speichern. Diese Informationen werden in der Regel an einen Server von Google in den USA übertragen und dort gespeichert.
+
+    Quelle: [https://www.e-recht24.de](https://www.e-recht24.de)
+    """)
