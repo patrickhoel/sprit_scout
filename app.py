@@ -62,9 +62,18 @@ if not df.empty:
 
     with tab_chart:
         sorte = st.selectbox("Sprit wählen:", ["e5", "e10", "diesel"], key="mobile_select")
-        # Pivot-Tabelle für das Diagramm
-        chart_data = df.pivot_table(index='zeitstempel', columns='tankstelle', values=sorte, aggfunc='mean')
-        st.line_chart(chart_data)
+        
+        # NEU: Wir berechnen den Durchschnitt und den absoluten Tiefstpreis pro Uhrzeit
+        trend_df = df.groupby('zeitstempel')[sorte].agg(['min', 'mean'])
+        
+        # Die Spalten hübsch umbenennen für die Legende
+        trend_df = trend_df.rename(columns={
+            'min': 'Günstigste Tankstelle', 
+            'mean': 'Stadt-Durchschnitt'
+        })
+        
+        # Ein aufgeräumtes Diagramm zeichnen
+        st.line_chart(trend_df, color=["#00ff00", "#ff0000"]) # Grün für Bestpreis, Rot für Durchschnitt
 
     with tab_list:
         # Nur die wichtigsten Spalten anzeigen und Zeit schön formatieren
