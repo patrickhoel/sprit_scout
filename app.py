@@ -11,19 +11,21 @@ st.set_page_config(page_title="Sprit Scout | Hölter Digital", page_icon=":mater
 
 # CSS (Hölter Style)
 st.markdown(f"""
-    <style>
-    .stMetric {{
-        /* Transparenter Hintergrund passt sich Light/Dark Mode an */
-        background-color: rgba(30, 90, 160, 0.05); 
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid {HOELTER_BLAU};
-        /* Dezentere Schatten, die im Dark Mode nicht stören */
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    }}
-    div[data-testid="stBaseButton-pillsActive"] {{ background-color: {HOELTER_BLAU} !important; color: white !important; }}
-    </style>
-    """, unsafe_allow_html=True)
+        <style>
+        .stMetric {{
+            /* Dieser Befehl passt die Box automatisch an Hell/Dunkel an! */
+            background-color: var(--secondary-background-color);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid {HOELTER_BLAU};
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        div[data-testid="stBaseButton-pillsActive"] {{
+            background-color: {HOELTER_BLAU} !important;
+            color: white !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
 
 def berechne_distanz(lat1, lon1, lat2, lon2):
     if pd.isna(lat1) or pd.isna(lon1) or pd.isna(lat2) or pd.isna(lon2): return 999.0

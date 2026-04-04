@@ -1,6 +1,0 @@
-[theme]
-primaryColor = "#1e5aa0"
-font = "sans serif"
-
-[server]
-enableXsrfProtection = false
