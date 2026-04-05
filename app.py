@@ -85,7 +85,7 @@ c_logo, c_title = st.columns([1, 10])
 with c_logo:
     try: st.image(Image.open("logo.png"), width=70)
     except: st.write(":material/directions_car:")
-with c_title: st.title("Wuppertal Tankt")
+with c_title: st.title("Wuppertal tankt")
 
 menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "§ Impressum", "⛨ Datenschutz"])
 st.divider()
