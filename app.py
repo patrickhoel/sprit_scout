@@ -104,7 +104,12 @@ if not df.empty:
         c1, c2, c3 = st.columns(3)
         for i, s in enumerate(['e5', 'e10', 'diesel']):
             m = aktuell.loc[aktuell[s].idxmin()]
-            zeit_str = m['zeitstempel'].strftime('%H:%M')
+            ts = m['zeitstempel']
+            heute = pd.Timestamp.now(tz='Europe/Berlin').date()
+            if ts.date() == heute:
+                zeit_str = f"Heute, {ts.strftime('%H:%M')}"
+            else:
+                zeit_str = f"{ts.strftime('%d.%m.%Y')}, {ts.strftime('%H:%M')}"
             with [c1, c2, c3][i]:
                 st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
                 st.caption(f":material/location_on: {m['tankstelle']} \n\n:material/schedule: Stand: {zeit_str} Uhr")
@@ -167,7 +172,12 @@ if not df.empty:
 
         # --- ANZEIGE ---
         for _, row in gefiltert.iterrows():
-            zeit_str = row['zeitstempel'].strftime('%H:%M')
+            ts = row['zeitstempel']
+            heute = pd.Timestamp.now(tz='Europe/Berlin').date()
+            if ts.date() == heute:
+                zeit_str = f"Heute, {ts.strftime('%H:%M')}"
+            else:
+                zeit_str = f"{ts.strftime('%d.%m.')}, {ts.strftime('%H:%M')}"
             distanz_text = f"{row['distanz']:.1f} km entfernt • " if 'distanz' in row else ""
             
             with st.container():
