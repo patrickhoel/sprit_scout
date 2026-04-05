@@ -7,14 +7,18 @@ def zeige_impressum():
     Osteroder Str. 21<br>
     42277 Wuppertal  
 
-    **Kontakt** Telefon: +491746890706  
-    E-Mail: patrick@hoelter-digital.de
-                                 
-    **Datenquellen** Die Spritpreisdaten werden über die API von **Tankerkönig.de** bezogen.  
-    Die Rohdaten stammen von der **Markttransparenzstelle für Kraftstoffe (MTS-K)**.
+    **Kontakt**<br>
+    Telefon: +491746890706<br>
+    E-Mail: patrick@hoelter-digital.de  
 
-    Quelle: [https://www.e-recht24.de](https://www.e-recht24.de) [https://www.tankerkoenig.de](https://www.tankerkoenig.de)
-    """, unsafe_allow_html=True) # Wichtig für das <br>
+    ---
+    **Datenquellen & Lizenz**<br>
+    Die Spritpreisdaten werden bereitgestellt von **[Tankerkönig.de](https://www.tankerkoenig.de)**.<br>
+    Die Rohdaten stammen von der Markttransparenzstelle für Kraftstoffe (MTS-K).<br>
+    Die Daten stehen unter der Lizenz **[Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.de)**.
+
+    Quellen: [e-recht24.de](https://www.e-recht24.de), [tankerkoenig.de](https://www.tankerkoenig.de)
+    """, unsafe_allow_html=True)
 
 def zeige_datenschutz():
     st.title("Datenschutzerklärung")

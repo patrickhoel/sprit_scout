@@ -6,6 +6,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # 1. Key laden
+# Key für den Zugriff auf die freie Tankerkönig-Spritpreis-API.
+# Für einen eigenen Key bitte unter https://creativecommons.tankerkoenig.de registrieren.
+# Der Key muss in einer .env Datei als TANKERKOENIG_API_KEY hinterlegt werden.
 load_dotenv()
 API_KEY = os.getenv("TANKERKOENIG_API_KEY")
 
