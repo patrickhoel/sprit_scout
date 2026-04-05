@@ -1,6 +1,7 @@
 import os
 import requests
 import sqlite3
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -13,38 +14,46 @@ if not API_KEY:
     exit()
 
 # --- KONFIGURATION ---
-# Wuppertal Zentrum
 LAT = 51.2562
 LNG = 7.1508
 RADIUS = 15
+INTERVALL = 300  # 300 Sekunden = 5 Minuten
+
+def check_preis_geaendert(cursor, name, e5, e10, diesel):
+    """Prüft, ob sich der Preis zur letzten Speicherung geändert hat."""
+    cursor.execute('''
+        SELECT e5, e10, diesel FROM preise 
+        WHERE tankstelle = ? 
+        ORDER BY zeitstempel DESC LIMIT 1
+    ''', (name,))
+    last_entry = cursor.fetchone()
+    
+    if last_entry is None:
+        return True  # Noch kein Eintrag vorhanden, also speichern
+    
+    # Vergleichen: Hat sich mindestens ein Preis geändert?
+    return (e5 != last_entry[0] or e10 != last_entry[1] or diesel != last_entry[2])
 
 def daten_sammeln():
-    # KORRIGIERTE URL: Die offizielle Tankerkönig-Schnittstelle
     url = f"https://creativecommons.tankerkoenig.de/json/list.php?lat={LAT}&lng={LNG}&rad={RADIUS}&type=all&apikey={API_KEY}"
-    
-    # CHROME DISGUISE: Wir tarnen uns als ganz normaler Windows-Browser
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json'
     }
 
     try:
-        print(f"📡 Starte Abfrage an Tankerkönig...")
         response = requests.get(url, headers=headers)
-        
         if response.status_code != 200:
-            print(f"❌ Server-Fehler {response.status_code}: Zugriff verweigert.")
-            print("Mögliche Ursachen: API-Key noch nicht aktiv (dauert bis zu 24h) oder falscher Endpoint.")
+            print(f"❌ Server-Fehler {response.status_code}")
             return
 
         data = response.json()
-        
         if data.get('ok'):
             conn = sqlite3.connect('spritpreise.db')
             cursor = conn.cursor()
             zeitstempel = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
-            count = 0
+            count_saved = 0
             for station in data.get('stations', []):
                 name = station.get('name')
                 e5 = station.get('e5')
@@ -52,27 +61,32 @@ def daten_sammeln():
                 diesel = station.get('diesel')
                 lat = station.get('lat')
                 lng = station.get('lng')
-                
-                # Wir speichern nur, wenn die API echte Preise liefert
+
+                # Nur prüfen/speichern, wenn Preise valide sind
                 if all(v is not None and isinstance(v, (int, float)) and v > 0 for v in [e5, e10, diesel]):
-                    cursor.execute('''
-                        INSERT INTO preise (zeitstempel, tankstelle, e5, e10, diesel, lat, lng)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (zeitstempel, name, e5, e10, diesel, lat, lng))
-                    count += 1
+                    if check_preis_geaendert(cursor, name, e5, e10, diesel):
+                        cursor.execute('''
+                            INSERT INTO preise (zeitstempel, tankstelle, e5, e10, diesel, lat, lng)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (zeitstempel, name, e5, e10, diesel, lat, lng))
+                        count_saved += 1
             
             conn.commit()
-            print(f"✅ [{zeitstempel}] {count} Tankstellen mit Koordinaten gespeichert.")
+            if count_saved > 0:
+                print(f"✅ [{zeitstempel}] {count_saved} Preisänderungen gespeichert.")
+            else:
+                print(f"😴 [{zeitstempel}] Keine Preisänderungen erkannt.")
             
-            # Housekeeping: Daten älter als 30 Tage löschen
+            # Housekeeping
             cursor.execute("DELETE FROM preise WHERE zeitstempel < datetime('now', '-30 days')")
             conn.commit()
             conn.close()
-        else:
-            print(f"⚠️ API-Fehler: {data.get('message', 'Unbekannter Fehler')}")
             
     except Exception as e:
         print(f"❌ Kritischer Fehler: {e}")
 
 if __name__ == "__main__":
-    daten_sammeln()
+    print(f"🚀 Collector gestartet (Intervall: {INTERVALL/60} Min)")
+    while True:
+        daten_sammeln()
+        time.sleep(INTERVALL)
