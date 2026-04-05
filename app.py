@@ -152,10 +152,18 @@ if not df.empty:
             u_lat, u_lng = plz_map[plz_input]
             gefiltert['distanz'] = gefiltert.apply(lambda r: berechne_distanz(u_lat, u_lng, r['lat'], r['lng']), axis=1)
             gefiltert = gefiltert[gefiltert['distanz'] <= radius_km]
-            gefiltert = gefiltert.sort_values(sorte)
-            st.caption(f"✓ {len(gefiltert)} Tankstellen gefunden.")
         elif plz_input != "":
             st.warning("PLZ nicht im System. Zeige alle Stationen.")
+
+        # --- WICHTIG: Die Sortierung und der fehlende Text ---
+        # Egal was gefiltert wurde: Immer nach dem Preis der gewählten Sorte sortieren
+        gefiltert = gefiltert.sort_values(sorte)
+        
+        # Den Hinweisstext schick formatiert anzeigen
+        if gewaehlte_station == "Alle anzeigen":
+            st.caption(f"✓ {len(gefiltert)} Tankstellen gefunden. **(Sortiert: Günstigste zuerst)**")
+        else:
+            st.caption(f"✓ Ergebnisse für {gewaehlte_station}")
 
         # --- ANZEIGE ---
         for _, row in gefiltert.iterrows():
