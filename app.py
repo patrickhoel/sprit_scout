@@ -101,19 +101,28 @@ if not df.empty:
     # --- ÜBERSICHT ---
     if menue == "✦ Übersicht":
         st.subheader("Die absoluten Bestpreise")
+        
+        # Wir suchen wieder im gesamten 'aktuell' DataFrame nach dem Minimum
         c1, c2, c3 = st.columns(3)
         for i, s in enumerate(['e5', 'e10', 'diesel']):
             m = aktuell.loc[aktuell[s].idxmin()]
+            
+            # Datums-Prüfung für maximale Transparenz beim Nutzer
             ts = m['zeitstempel']
             heute = pd.Timestamp.now(tz='Europe/Berlin').date()
+            gestern = heute - pd.Timedelta(days=1)
+            
             if ts.date() == heute:
                 zeit_str = f"Heute, {ts.strftime('%H:%M')}"
+            elif ts.date() == gestern:
+                zeit_str = f"Gestern, {ts.strftime('%H:%M')}"
             else:
-                zeit_str = f"{ts.strftime('%d.%m.%Y')}, {ts.strftime('%H:%M')}"
+                zeit_str = f"{ts.strftime('%d.%m.')}, {ts.strftime('%H:%M')}"
+                
             with [c1, c2, c3][i]:
                 st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
                 st.caption(f":material/location_on: {m['tankstelle']} \n\n:material/schedule: Stand: {zeit_str} Uhr")
-
+                
     # --- UMKREISSUCHE ---
     elif menue == "◎ Umkreissuche":
         st.subheader("Umkreissuche & Stationen")
