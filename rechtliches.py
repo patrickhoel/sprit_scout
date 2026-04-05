@@ -8,9 +8,12 @@ def zeige_impressum():
     42277 Wuppertal  
 
     **Kontakt** Telefon: +491746890706  
-    E-Mail: patrick@hoelter-digital.de  
+    E-Mail: patrick@hoelter-digital.de
+                                 
+    **Datenquellen** Die Spritpreisdaten werden über die API von **Tankerkönig.de** bezogen.  
+    Die Rohdaten stammen von der **Markttransparenzstelle für Kraftstoffe (MTS-K)**.
 
-    Quelle: [https://www.e-recht24.de](https://www.e-recht24.de)
+    Quelle: [https://www.e-recht24.de](https://www.e-recht24.de) [https://www.tankerkoenig.de](https://www.tankerkoenig.de)
     """, unsafe_allow_html=True) # Wichtig für das <br>
 
 def zeige_datenschutz():
