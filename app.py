@@ -195,7 +195,7 @@ if not df.empty:
                     st.markdown(f"**{row['tankstelle']}**")
                     st.caption(f"{distanz_text}:material/schedule: {zeit_str} Uhr")
                 with c2:
-                    st.metric("", f"{row[sorte]:.2f}€", label_visibility="collapsed")
+                    st.metric("Preis", f"{row[sorte]:.2f}€", label_visibility="collapsed")
                 with c3:
                     url = f"https://www.google.com/maps/search/?api=1&query={row['lat']},{row['lng']}"
                     st.link_button(":material/navigation: Route", url, use_container_width=True)
@@ -292,3 +292,23 @@ if not df.empty:
 
     elif menue == "§ Impressum": rechtliches.zeige_impressum()
     elif menue == "⛨ Datenschutz": rechtliches.zeige_datenschutz()
+
+# --- Hölter Digital Branding als Footer ---
+    st.markdown("---") # Eine dezente Trennlinie ganz unten
+    
+    branding_html = """
+    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="30" height="30">
+          <rect width="512" height="512" rx="120" fill="#0d1117" />
+          <g fill="none" stroke="#3b82f6" stroke-width="45" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 220 130 L 100 256 L 220 382" />
+            <path d="M 292 130 L 412 256 L 292 382" />
+            <path d="M 140 256 L 372 256" />
+          </g>
+        </svg>
+        <a href="https://hoelter-digital.de" target="_blank" style="color: #8b949e; font-size: 0.9rem; text-decoration: none; transition: color 0.2s;">
+            powered by <b>Hölter Digital</b>
+        </a>
+    </div>
+    """
+    st.markdown(branding_html, unsafe_allow_html=True)
