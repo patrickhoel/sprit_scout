@@ -85,7 +85,7 @@ def daten_sammeln():
                 lng = station.get('lng')
 
                 # Nur prüfen/speichern, wenn Preise valide sind
-                if all(v is not None and isinstance(v, (int, float)) and v > 0 for v in [e5, e10, diesel]):
+                if any(v is not None and isinstance(v, (int, float)) and v > 0 for v in [e5, e10, diesel]):
                     if check_preis_geaendert(cursor, name, e5, e10, diesel):
                         cursor.execute('''
                             INSERT INTO preise (zeitstempel, tankstelle, e5, e10, diesel, lat, lng)
