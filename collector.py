@@ -86,7 +86,9 @@ def daten_sammeln():
             conn.close()
             
     except Exception as e:
-        print(f"❌ Kritischer Fehler: {e}")
+        # Den Fehlertext als String greifen und den API_KEY durch Sternchen ersetzen
+        fehler_text = str(e).replace(API_KEY, "*****VERSTECKT*****")
+        print(f"❌ Kritischer Fehler: {fehler_text}")
 
 if __name__ == "__main__":
     print(f"🚀 Collector gestartet (Intervall: {INTERVALL/60} Min)")

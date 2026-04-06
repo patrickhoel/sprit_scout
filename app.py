@@ -10,18 +10,63 @@ from datetime import timedelta
 HOELTER_BLAU = "#1e5aa0"
 st.set_page_config(page_title="Wuppertal Tankt | Hölter Digital", page_icon="logo.png", layout="wide")
 
-# CSS (Hölter Style)
+# --- INITIALISIERUNG & POP-UP FENSTER ---
+if "preis_modus" not in st.session_state:
+    st.session_state.preis_modus = None  # Wir wissen noch nicht, was der User will
 
+# --- DAS POP-UP FENSTER ---
+@st.dialog("Wuppertal tankt")
+def zeige_willkommens_dialog():
+    # Logo und Text nebeneinander anordnen
+    col_logo, col_text = st.columns([1, 4])
+    with col_logo:
+        try: 
+            st.image(Image.open("logo.png"), use_container_width=True)
+        except: 
+            st.write(":material/local_gas_station:")
+            
+    with col_text:
+        # Etwas größere, fette Überschrift
+        st.markdown("#### Willkommen!")
+        st.write("Wie möchtest du die Spritpreise in der App angezeigt bekommen?")
+    
+    st.write("") # Ein bisschen Luft für die Optik
+    
+    # Dropdown statt Radio-Buttons
+    wahl = st.selectbox(
+        "Deine bevorzugte Anzeige:",
+        [
+            "Klassisch (3-stellig, wie an der Zapfsäule)", 
+            "Übersichtlich (2-stellig, aufgerundet)"
+        ],
+        index=0
+    )
+    
+    st.write("") # Ein bisschen Luft vor dem Button
+    
+    # Der Button wird als "Primary" markiert und über die ganze Breite gezogen
+    if st.button("Speichern & Starten", type="primary", use_container_width=True):
+        st.session_state.preis_modus = wahl
+        st.rerun()
+
+# Trigger: Wenn noch keine Wahl getroffen wurde, Pop-up öffnen
+if st.session_state.preis_modus is None:
+    zeige_willkommens_dialog()
+
+# --- CSS (Hölter Style) ---
 st.markdown(f"""
         <style>
         /* 1. Die Kacheln */
-        .stMetric {{
+        .stMetric, .pro-metric {{
             background-color: var(--secondary-background-color);
             padding: 15px;
             border-radius: 10px;
             border-left: 5px solid {HOELTER_BLAU};
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
+        
+        /* Sorgt dafür, dass der Markdown-Text keinen extra Abstand nach unten hat */
+        .pro-metric p {{ margin-bottom: 0; line-height: 1.2; }}
 
         /* 2. Dropdown-Menü & PLZ-Feld (Fokus-Rahmen) */
         div[data-baseweb="select"] > div:focus-within,
@@ -42,8 +87,7 @@ st.markdown(f"""
             color: {HOELTER_BLAU} !important;
         }}
 
-        /* 4. Die Sorte-Auswahl (Der letzte Endgegner) */
-        /* Wir zielen auf alle möglichen Pill/Button/Radio Bezeichnungen von Streamlit */
+        /* 4. Die Sorte-Auswahl */
         button[data-testid="stBaseButton-pillsActive"],
         button[data-testid="stBaseButton-pillsActive"]:hover,
         button[data-testid="stBaseButton-pillsActive"]:focus,
@@ -54,12 +98,22 @@ st.markdown(f"""
             color: {HOELTER_BLAU} !important;
         }}
         
-        /* Erzwingt die blaue Schrift auch für den Text IM Button */
         button[data-testid="stBaseButton-pillsActive"] *,
         button[data-testid="stBaseButton-pillsActive"]:hover *,
         div[data-testid="stPills"] button[aria-pressed="true"] *,
         label[data-baseweb="radio"] div[aria-checked="true"] * {{
             color: {HOELTER_BLAU} !important;
+        }}
+        /* 5. Primary Button umfärben (für das Pop-up) */
+        button[kind="primary"] {{
+            background-color: {HOELTER_BLAU} !important;
+            border-color: {HOELTER_BLAU} !important;
+            color: white !important;
+        }}
+        
+        button[kind="primary"]:hover {{
+            background-color: #154073 !important; /* Ein etwas dunkleres Blau für den Hover-Effekt */
+            border-color: #154073 !important;
         }}
         </style>
         """, unsafe_allow_html=True)
@@ -89,7 +143,6 @@ with c_logo:
 with c_title: st.title("Wuppertal tankt")
 
 # --- NAVIGATION ---
-# Wir fügen "Preis-Vergleich" direkt hinzu, wie du es wolltest!
 menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich", "§ Impressum", "⛨ Datenschutz"])
 st.divider()
 
@@ -102,12 +155,10 @@ if not df.empty:
     if menue == "✦ Übersicht":
         st.subheader("Die absoluten Bestpreise")
         
-        # Wir suchen wieder im gesamten 'aktuell' DataFrame nach dem Minimum
         c1, c2, c3 = st.columns(3)
         for i, s in enumerate(['e5', 'e10', 'diesel']):
             m = aktuell.loc[aktuell[s].idxmin()]
             
-            # Datums-Prüfung für maximale Transparenz beim Nutzer
             ts = m['zeitstempel']
             heute = pd.Timestamp.now(tz='Europe/Berlin').date()
             gestern = heute - pd.Timedelta(days=1)
@@ -120,21 +171,27 @@ if not df.empty:
                 zeit_str = f"{ts.strftime('%d.%m.')}, {ts.strftime('%H:%M')}"
                 
             with [c1, c2, c3][i]:
-                st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
+                # Logik-Anpassung an die neuen Bezeichnungen
+                if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
+                    preis_str = f"{m[s]:.3f}"
+                    st.markdown(f"""
+                    <div class="pro-metric">
+                        <div style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 4px;">Super {s.upper()}</div>
+                        <div style="font-size: 1.8rem; font-weight: bold;">{preis_str[:-1]}<sup style="font-size: 0.6em;">{preis_str[-1]}</sup> €</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.metric(f"Super {s.upper()}", f"{m[s]:.2f}€")
+                
                 st.caption(f":material/location_on: {m['tankstelle']} \n\n:material/schedule: Stand: {zeit_str} Uhr")
                 
     # --- UMKREISSUCHE ---
     elif menue == "◎ Umkreissuche":
         st.subheader("Umkreissuche & Stationen")
         
-        # 1. Dropdown mit Suchfunktion (Streamlit macht das automatisch bei selectbox!)
         stationen_namen = sorted(aktuell['tankstelle'].unique().tolist())
-        gewaehlte_station = st.selectbox(
-            ":material/search: Tankstelle suchen oder auswählen", 
-            ["Alle anzeigen"] + stationen_namen
-        )
+        gewaehlte_station = st.selectbox(":material/search: Tankstelle suchen", ["Alle anzeigen"] + stationen_namen)
 
-        # 2. Filtereinstellungen
         col_plz, col_rad = st.columns([2, 2])
         with col_plz:
             plz_input = st.text_input("Deine PLZ (für Umkreis):", placeholder="z.B. 42281")
@@ -143,14 +200,11 @@ if not df.empty:
         
         sorte = st.pills("Sorte:", ["e5", "e10", "diesel"], default="e5")
 
-        # --- FILTER LOGIK ---
         gefiltert = aktuell.copy()
 
-        # Nach Station filtern, wenn eine gewählt wurde
         if gewaehlte_station != "Alle anzeigen":
             gefiltert = gefiltert[gefiltert['tankstelle'] == gewaehlte_station]
 
-        # Nach PLZ/Radius filtern
         plz_map = {
             "42103": (51.255, 7.149), "42105": (51.264, 7.145), "42107": (51.272, 7.144),
             "42109": (51.285, 7.142), "42111": (51.298, 7.135), "42113": (51.276, 7.114),
@@ -169,17 +223,13 @@ if not df.empty:
         elif plz_input != "":
             st.warning("PLZ nicht im System. Zeige alle Stationen.")
 
-        # --- WICHTIG: Die Sortierung und der fehlende Text ---
-        # Egal was gefiltert wurde: Immer nach dem Preis der gewählten Sorte sortieren
         gefiltert = gefiltert.sort_values(sorte)
         
-        # Den Hinweisstext schick formatiert anzeigen
         if gewaehlte_station == "Alle anzeigen":
             st.caption(f"✓ {len(gefiltert)} Tankstellen gefunden. **(Sortiert: Günstigste zuerst)**")
         else:
             st.caption(f"✓ Ergebnisse für {gewaehlte_station}")
 
-        # --- ANZEIGE ---
         for _, row in gefiltert.iterrows():
             ts = row['zeitstempel']
             heute = pd.Timestamp.now(tz='Europe/Berlin').date()
@@ -195,55 +245,48 @@ if not df.empty:
                     st.markdown(f"**{row['tankstelle']}**")
                     st.caption(f"{distanz_text}:material/schedule: {zeit_str} Uhr")
                 with c2:
-                    st.metric("Preis", f"{row[sorte]:.2f}€", label_visibility="collapsed")
+                    # Logik-Anpassung an die neuen Bezeichnungen
+                    if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
+                        preis_str = f"{row[sorte]:.3f}"
+                        st.markdown(f"""
+                        <div class="pro-metric">
+                            <div style="font-size: 1.5rem; font-weight: bold; text-align: center;">
+                                {preis_str[:-1]}<sup style="font-size: 0.6em;">{preis_str[-1]}</sup> €
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.metric("Preis", f"{row[sorte]:.2f}€", label_visibility="collapsed")
                 with c3:
                     url = f"https://www.google.com/maps/search/?api=1&query={row['lat']},{row['lng']}"
-                    st.link_button(":material/navigation: Route", url, use_container_width=True)
+                    st.link_button(":material/navigation: Route", url, width="stretch")
                 st.divider()
 
     # --- PREIS-VERGLEICH ---
     elif menue == "⇄ Preis-Vergleich":
         st.subheader("Preis-Vergleich")
         
-        # 1. Start- und Enddatum der Datenbank ermitteln
         min_date = df['zeitstempel'].min().date()
         max_date = df['zeitstempel'].max().date()
         
-        # Standard-Datum berechnen (14 Tage zurück, aber nicht vor dem Start der DB)
         default_date = max_date - pd.Timedelta(days=14)
         if default_date < min_date:
             default_date = min_date
         
-        # 2. Auswahl: Wann, Was, Wo?
         col_date, col_time, col_sorte = st.columns(3)
         with col_date:
-            # Alles außerhalb von min_value und max_value wird im Kalender ausgegraut!
-            ziel_datum = st.date_input(
-                "Vergleichsdatum", 
-                value=default_date,
-                min_value=min_date,
-                max_value=max_date
-            )
+            ziel_datum = st.date_input("Vergleichsdatum", value=default_date, min_value=min_date, max_value=max_date)
         with col_time:
-            # step=timedelta(minutes=30) zwingt die Auswahl auf halbe Stunden
-            ziel_uhrzeit = st.time_input(
-                "Uhrzeit", 
-                value=pd.Timestamp.now().replace(minute=0, second=0, microsecond=0).time(), # Startet glatt zur vollen Stunde
-                step=timedelta(minutes=30)
-            )
+            ziel_uhrzeit = st.time_input("Uhrzeit", value=pd.Timestamp.now().replace(minute=0, second=0, microsecond=0).time(), step=timedelta(minutes=30))
         with col_sorte:
             sorte = st.selectbox("Kraftstoff", ["e5", "e10", "diesel"], index=0)
             
-        # 3. Such-Dropdown für Tankstellen
         stationen_namen = sorted(aktuell['tankstelle'].unique().tolist())
         such_station = st.selectbox("⌕ Bestimmte Tankstelle (optional)", ["Alle vergleichen"] + stationen_namen)
         
         st.divider()
         
-        # 4. Zeitstempel zusammenbauen
         target_dt = pd.to_datetime(f"{ziel_datum} {ziel_uhrzeit}").tz_localize('Europe/Berlin')
-        
-        # 5. Historische Daten filtern
         historie_df = df[df['zeitstempel'] <= target_dt]
         
         if historie_df.empty:
@@ -277,23 +320,22 @@ if not df.empty:
                             st.markdown(f"**{row['tankstelle']}**")
                             st.caption(f"Aktueller Stand: {row['zeitstempel_jetzt'].strftime('%H:%M')} Uhr")
                         with c2:
-                            st.metric(
-                                label="Aktueller Preis", 
-                                value=f"{preis_jetzt:.2f} €", 
-                                delta=f"{differenz:+.2f} €",
-                                delta_color="inverse"
-                            )
+                            # Logik-Anpassung an die neuen Bezeichnungen
+                            if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
+                                st.metric("Aktueller Preis", f"{preis_jetzt:.3f} €", delta=f"{differenz:+.3f} €", delta_color="inverse")
+                            else:
+                                st.metric("Aktueller Preis", f"{preis_jetzt:.2f} €", delta=f"{differenz:+.2f} €", delta_color="inverse")
                         with c3:
-                            st.metric(
-                                label="Preis damals", 
-                                value=f"{preis_damals:.2f} €"
-                            )
+                            if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
+                                st.metric("Preis damals", f"{preis_damals:.3f} €")
+                            else:
+                                st.metric("Preis damals", f"{preis_damals:.2f} €")
                         st.divider()
 
     elif menue == "§ Impressum": rechtliches.zeige_impressum()
     elif menue == "⛨ Datenschutz": rechtliches.zeige_datenschutz()
 
-# --- Hölter Digital Branding & Datenquelle als Footer ---
+# --- Hölter Digital Branding als Footer ---
 st.markdown("---") 
 
 footer_html = """
