@@ -58,7 +58,19 @@ def daten_sammeln():
             
             count_saved = 0
             for station in data.get('stations', []):
-                name = station.get('name')
+                # 1. Den rohen Namen und die Adresse vom Tankerkönig holen
+                raw_name = station.get('name', 'Unbekannt')
+                street = station.get('street', '')
+                house = station.get('houseNumber', '')
+                
+                # 2. Einen einzigartigen Namen basteln (z.B. "Aral Tankstelle (Hauptstr. 1)")
+                if street:
+                    # strip() entfernt überflüssige Leerzeichen, falls keine Hausnummer da ist
+                    name = f"{raw_name} ({street} {house})".strip()
+                else:
+                    name = raw_name
+
+                # 3. Die restlichen Daten holen
                 e5 = station.get('e5')
                 e10 = station.get('e10')
                 diesel = station.get('diesel')
