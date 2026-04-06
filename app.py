@@ -5,6 +5,7 @@ from PIL import Image
 import rechtliches
 import numpy as np
 from datetime import timedelta
+from tab_analyse import zeige_analyse_tab
 
 # --- CONFIG ---
 HOELTER_BLAU = "#1e5aa0"
@@ -149,7 +150,7 @@ with c_title:
     st.title("Wuppertal tankt")
 
 # --- NAVIGATION ---
-menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich"])
+menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich", "🚟 Wuppertal Tankt 2.0"])
 st.divider()
 
 df = lade_daten()
@@ -368,9 +369,13 @@ if not df.empty:
                                 """, unsafe_allow_html=True)
                             else:
                                 st.metric("Preis damals", f"{preis_damals:.2f} €")
-
-
-# (Hier enden deine vorherigen Code-Blöcke für den Preis-Vergleich)
+    
+    elif menue == "🚟 Wuppertal Tankt 2.0":
+        # 1. Wir prüfen direkt, ob "Klassisch" gewählt ist und speichern True oder False
+        exakte_preise = (st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)")
+        
+        # 2. Wir geben diese Info direkt in der Klammer mit an die Analyse-Seite!
+        zeige_analyse_tab('spritpreise.db', exakte_preise)
 
 # --- RECHTLICHES (POP-UPS) ---
 @st.dialog("Impressum")
@@ -414,10 +419,10 @@ button[kind="tertiary"]:hover * {{
 # Die Links schön nah beieinander mittig zentrieren
 col_leer1, col_imp, col_dat, col_leer2 = st.columns([3, 1, 1, 3])
 with col_imp:
-    if st.button("Impressum", type="tertiary", use_container_width=True):
+    if st.button("Impressum", type="tertiary", width='stretch'):
         open_impressum()
 with col_dat:
-    if st.button("Datenschutz", type="tertiary", use_container_width=True):
+    if st.button("Datenschutz", type="tertiary", width='stretch'):
         open_datenschutz()
 
 # Dein bestehendes Hölter Digital Branding inkl. Copyright-Hinweis
