@@ -408,15 +408,6 @@ def open_impressum():
 def open_datenschutz():
     rechtliches.zeige_datenschutz()
 
-# --- RECHTLICHES (POP-UPS) ---
-@st.dialog("Impressum")
-def open_impressum():
-    rechtliches.zeige_impressum()
-
-@st.dialog("Datenschutz")
-def open_datenschutz():
-    rechtliches.zeige_datenschutz()
-
 # --- FOOTER BEREICH ---
 st.markdown("---") 
 
