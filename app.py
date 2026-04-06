@@ -156,7 +156,8 @@ def lade_daten():
     df = pd.read_sql_query("SELECT * FROM preise WHERE zeitstempel >= datetime('now', '-7 days')", conn)
     conn.close()
     if not df.empty:
-        df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
+        # HIER IST DER FIX: Wir weisen direkt 'Europe/Berlin' zu, ohne vorherige UTC-Umrechnung!
+        df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('Europe/Berlin', ambiguous='infer')
     return df
 
 # --- HEADER ---
@@ -181,7 +182,7 @@ if not df.empty:
 
     # --- ÜBERSICHT ---
     if menue == "✦ Übersicht":
-        st.subheader("Die absoluten Bestpreise")
+        st.subheader("Bestpreise")
         
         c1, c2, c3 = st.columns(3)
         for i, s in enumerate(['e5', 'e10', 'diesel']):
