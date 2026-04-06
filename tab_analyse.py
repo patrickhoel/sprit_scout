@@ -39,7 +39,8 @@ def zeige_analyse_tab(db_pfad, exakte_preise):
         return
 
     # Zeitstempel für Deutschland aufbereiten
-    df['zeitstempel'] = pd.to_datetime(df['zeitstempel'], utc=True).dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
+    # NEU (Einfach die Zeit nehmen, die da steht)
+    df['zeitstempel'] = pd.to_datetime(df['zeitstempel'])
 
     # 2. Auswahlmenü
     col1, col2 = st.columns(2)
@@ -66,7 +67,7 @@ def zeige_analyse_tab(db_pfad, exakte_preise):
     differenz = aktueller_preis - wuppertal_schnitt
 
     # Zeitstempel formatieren
-    heute = pd.Timestamp.now().date()
+    heute = pd.Timestamp.now(tz='Europe/Berlin').date()
     if aktueller_zeitstempel.date() == heute:
         zeit_display = f"Heute, {aktueller_zeitstempel.strftime('%H:%M')} Uhr"
     else:
