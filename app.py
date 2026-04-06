@@ -9,7 +9,27 @@ from tab_analyse import zeige_analyse_tab
 
 # --- CONFIG ---
 HOELTER_BLAU = "#1e5aa0"
-st.set_page_config(page_title="Wuppertal Tankt | Hölter Digital", page_icon="logo.png", layout="wide")
+
+st.set_page_config(
+    page_title="Spritpreise Wuppertal | Wuppertal Tankt",
+    page_icon="logo.png", 
+    layout="wide",
+    menu_items={
+        'Get Help': 'https://wuppertaltankt.hoelter-digital.de',
+        'Report a bug': "https://wuppertaltankt.hoelter-digital.de",
+        'About': "# Wuppertal Tankt 2.0\nEntscheidungshilfe für Spritpreise in Wuppertal."
+    }
+)
+# Dieser Block ist für Google sichtbar, aber für Menschen unsichtbar
+st.markdown(
+    """
+    <div style="display:none;">
+        <h1>Spritpreise Wuppertal – Echtzeit-Analyse & Empfehlung</h1>
+        <p>Vergleiche aktuelle Benzinpreise und Dieselpreise in Wuppertal mit unserer datenbasierten Entscheidungshilfe für Benzin und Diesel.</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- INITIALISIERUNG & POP-UP FENSTER ---
 if "preis_modus" not in st.session_state:
