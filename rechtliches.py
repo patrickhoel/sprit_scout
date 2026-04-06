@@ -18,6 +18,11 @@ def zeige_impressum():
     Die Daten stehen unter der Lizenz **[Creative Commons CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.de)**.
 
     Quellen: [e-recht24.de](https://www.e-recht24.de), [tankerkoenig.de](https://www.tankerkoenig.de)
+
+    ---
+    **Haftungsausschluss**<br>
+    Die angezeigten Kraftstoffpreise und Empfehlungen dienen ausschließlich der unverbindlichen Information.<br>
+    Wir übernehmen keine Gewähr für die Richtigkeit, Vollständigkeit und Aktualität der von Tankerkönig.de und der MTS-K übermittelten Daten.
     """, unsafe_allow_html=True)
 
 def zeige_datenschutz():
