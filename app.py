@@ -130,9 +130,10 @@ def berechne_distanz(lat1, lon1, lat2, lon2):
     a = np.sin(dphi/2)**2 + np.cos(phi1) * np.cos(phi2) * np.sin(dlambda/2)**2
     return 2 * r * np.arctan2(np.sqrt(a), np.sqrt(1-a))
 
+@st.cache_data(ttl=300) # Behält die Daten für 300 Sekunden (5 Min) im Cache
 def lade_daten():
     conn = sqlite3.connect('spritpreise.db')
-    df = pd.read_sql_query("SELECT * FROM preise", conn)
+    df = pd.read_sql_query("SELECT * FROM preise WHERE zeitstempel >= datetime('now', '-7 days')", conn)
     conn.close()
     if not df.empty:
         df['zeitstempel'] = pd.to_datetime(df['zeitstempel']).dt.tz_localize('UTC').dt.tz_convert('Europe/Berlin')
