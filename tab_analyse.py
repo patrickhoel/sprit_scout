@@ -9,10 +9,8 @@ def format_tankpreis(preis, exakte_preise=True):
     oder als 1,76 € (gerundet, auf 2 Nachkommastellen).
     """
     if not exakte_preise:
-        # Wenn der User gerundete Preise will (2 Nachkommastellen)
         return f"{preis:.2f} €".replace('.', ',')
         
-    # Wenn der User exakte Preise will (3 Nachkommastellen mit Hochzahl)
     p_str = f"{preis:.3f}".replace('.', ',')
     hauptteil = p_str[:-1]
     letzte_ziffer = p_str[-1]
@@ -28,7 +26,6 @@ def zeige_analyse_tab(db_pfad, exakte_preise):
 
     # 1. Daten der letzten 24 Stunden laden
     conn = sqlite3.connect(db_pfad)
-    # Wir holen nur die Daten von gestern bis jetzt
     query = """
         SELECT zeitstempel, tankstelle, e5, e10, diesel 
         FROM preise 
@@ -41,69 +38,97 @@ def zeige_analyse_tab(db_pfad, exakte_preise):
         st.warning("Noch nicht genug Daten für eine Analyse gesammelt. Bitte warte auf den Collector!")
         return
 
-    # Zeitstempel reparieren (damit Pandas versteht, dass es sich um echte Uhrzeiten handelt)
-    # Zeitstempel von UTC in die deutsche Zeit (inkl. Sommerzeit) umwandeln.
+    # Zeitstempel für Deutschland aufbereiten
     df['zeitstempel'] = pd.to_datetime(df['zeitstempel'], utc=True).dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
 
-    # 2. Auswahlmenü für den User
+    # 2. Auswahlmenü
     col1, col2 = st.columns(2)
     with col1:
-        tankstellen_liste = df['tankstelle'].unique()
-        gewaehlte_tanke = st.selectbox("Wähle deine Tankstelle", sorted(tankstellen_liste))
+        tankstellen_liste = sorted(df['tankstelle'].unique())
+        gewaehlte_tanke = st.selectbox("Wähle deine Tankstelle", tankstellen_liste)
     with col2:
         sorte = st.selectbox("Welchen Sprit tankst du?", ["e5", "e10", "diesel"], index=0)
 
-    # 3. Daten nur für diese EINE Tankstelle filtern
+    # 3. Filterung
     df_tanke = df[df['tankstelle'] == gewaehlte_tanke].sort_values('zeitstempel')
 
     if df_tanke.empty:
         st.info("Für diese Tankstelle haben wir aktuell keine 24h-Daten.")
         return
 
-    # 4. Die Mathe-Magie (Wuppertal-Schnitt & Aktueller Preis)
-    aktueller_preis = df_tanke.iloc[-1][sorte] # Der neueste Preis der gewählten Tankstelle
-    tanke_schnitt = df_tanke[sorte].mean()     # Der 24h-Schnitt NUR dieser Tankstelle
-    wuppertal_schnitt = df[sorte].mean()       # Der 24h-Schnitt ALLER Tankstellen in Wuppertal
+    # 4. Die Mathe-Magie
+    letzter_eintrag = df_tanke.iloc[-1]
+    aktueller_preis = letzter_eintrag[sorte]
+    aktueller_zeitstempel = letzter_eintrag['zeitstempel']
     
-    # Wir berechnen die Differenz zum WUPPERTAL-Schnitt
+    tanke_schnitt = df_tanke[sorte].mean()
+    wuppertal_schnitt = df[sorte].mean()
     differenz = aktueller_preis - wuppertal_schnitt
+
+    # Zeitstempel formatieren
+    heute = pd.Timestamp.now().date()
+    if aktueller_zeitstempel.date() == heute:
+        zeit_display = f"Heute, {aktueller_zeitstempel.strftime('%H:%M')} Uhr"
+    else:
+        zeit_display = f"{aktueller_zeitstempel.strftime('%d.%m., %H:%M')} Uhr"
 
     # --- DIE EMPFEHLUNGS-AMPEL ---
     st.write("---")
     st.subheader("✧ Soll ich jetzt tanken?")
     
-    if differenz <= -0.015: # Mehr als 1,5 Cent GÜNSTIGER als der Stadt-Schnitt
+    if differenz <= -0.015:
         st.success(f"🟢 **Gute Gelegenheit!** Mit {aktueller_preis:.2f} € tankst du hier aktuell spürbar günstiger als der stadtweite Durchschnitt.")
-    elif differenz > 0.015:  # Mehr als 1,5 Cent TEURER als der Stadt-Schnitt
+    elif differenz > 0.015:
         st.error(f"🔴 **Eventuell noch etwas warten.** Mit {aktueller_preis:.2f} € liegt der Preis momentan etwas über dem Wuppertaler Durchschnitt.")
-    else:                   # Alles dazwischen (+/- 1,5 Cent)
+    else:
         st.warning(f"🟡 **Fairer Preis.** Mit {aktueller_preis:.2f} € bewegt sich die Tankstelle absolut im normalen städtischen Mittelfeld.")
 
-    # Schicke Metriken in 3 Spalten (Aktueller Preis | Stadt-Schnitt | Tanken-Schnitt)
-    # Schicke Metriken in 3 Spalten
+    # --- METRIKEN ---
     col_a, col_b, col_c = st.columns(3)
     delta_text = f"{differenz:+.2f} € zum Stadt-Ø".replace('.', ',')
     
-    col_a.metric("Aktueller Preis", format_tankpreis(aktueller_preis, exakte_preise), delta_text, delta_color="inverse")
-    col_b.metric("Ø Wuppertal (24h)", format_tankpreis(wuppertal_schnitt, exakte_preise))
-    col_c.metric("Ø Diese Tankstelle (24h)", format_tankpreis(tanke_schnitt, exakte_preise))
+    with col_a:
+        st.metric("Aktueller Preis", format_tankpreis(aktueller_preis, exakte_preise), delta_text, delta_color="inverse")
+        st.caption(f":material/schedule: Stand: {zeit_display}")
+        
+    with col_b:
+        st.metric("Ø Wuppertal (24h)", format_tankpreis(wuppertal_schnitt, exakte_preise))
+        st.caption("Stadtweiter Durchschnitt")
+        
+    with col_c:
+        st.metric("Ø Diese Tankstelle (24h)", format_tankpreis(tanke_schnitt, exakte_preise))
+        st.caption("Eigener Durchschnitt")
 
-    # --- DER PLOTLY GRAPH ---
+    # --- DER PLOTLY GRAPH (Hölter-Blue Style) ---
     st.write("---")
     st.subheader("⎍ Preisverlauf (Letzte 24h)")
     
-    # Plotly macht automatisch wunderschöne interaktive Charts
     fig = px.line(
         df_tanke, 
         x='zeitstempel', 
         y=sorte, 
         markers=True,
-        line_shape='hv' 
+        line_shape='hv',
+        color_discrete_sequence=["#1e5aa0"] # Hölter Blau
     )
     
-    # Die Y-Achse zuschneiden
-    ymin = df_tanke[sorte].min() - 0.05
-    ymax = df_tanke[sorte].max() + 0.05
-    fig.update_layout(yaxis_range=[ymin, ymax], xaxis_title="Uhrzeit", yaxis_title="Preis in €")
+    # Styling-Anpassungen
+    fig.update_traces(line_width=3, marker=dict(size=8))
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=20, b=0),
+        xaxis_title="Uhrzeit",
+        yaxis_title="Preis in €",
+        hovermode="x unified"
+    )
+    
+    # Gitterlinien und Achsen-Zuschnitt
+    fig.update_yaxes(gridcolor='rgba(128,128,128,0.2)')
+    fig.update_xaxes(gridcolor='rgba(128,128,128,0.2)')
+    
+    ymin = df_tanke[sorte].min() - 0.02
+    ymax = df_tanke[sorte].max() + 0.02
+    fig.update_layout(yaxis_range=[ymin, ymax])
 
     st.plotly_chart(fig, width='stretch')
