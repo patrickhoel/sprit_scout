@@ -17,11 +17,13 @@ if "preis_modus" not in st.session_state:
 # --- DAS POP-UP FENSTER ---
 @st.dialog("Wuppertal tankt")
 def zeige_willkommens_dialog():
-    # Logo und Text nebeneinander anordnen
+    # DIESE ZEILE HAT GEFEHLT: Hier werden die Spalten erschaffen!
     col_logo, col_text = st.columns([1, 4])
+    
     with col_logo:
         try: 
-            st.image(Image.open("logo.png"), use_container_width=True)
+            logo_img = Image.open("logo.png")
+            st.image(logo_img, width="stretch")
         except: 
             st.write(":material/local_gas_station:")
             
@@ -45,7 +47,7 @@ def zeige_willkommens_dialog():
     st.write("") # Ein bisschen Luft vor dem Button
     
     # Der Button wird als "Primary" markiert und über die ganze Breite gezogen
-    if st.button("Speichern & Starten", type="primary", use_container_width=True):
+    if st.button("Speichern & Starten", type="primary", width='stretch'):
         st.session_state.preis_modus = wahl
         st.rerun()
 
@@ -138,9 +140,13 @@ def lade_daten():
 # --- HEADER ---
 c_logo, c_title = st.columns([1, 10])
 with c_logo:
-    try: st.image(Image.open("logo.png"), width='stretch')
-    except: st.write(":material/directions_car:")
-with c_title: st.title("Wuppertal tankt")
+    try: 
+        logo_img = Image.open("logo.png")
+        st.image(logo_img, width="stretch")
+    except: 
+        st.write(":material/directions_car:")
+with c_title: 
+    st.title("Wuppertal tankt")
 
 # --- NAVIGATION ---
 menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich", "§ Impressum", "⛨ Datenschutz"])
@@ -320,17 +326,48 @@ if not df.empty:
                             st.markdown(f"**{row['tankstelle']}**")
                             st.caption(f"Aktueller Stand: {row['zeitstempel_jetzt'].strftime('%H:%M')} Uhr")
                         with c2:
-                            # Logik-Anpassung an die neuen Bezeichnungen
                             if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
-                                st.metric("Aktueller Preis", f"{preis_jetzt:.3f} €", delta=f"{differenz:+.3f} €", delta_color="inverse")
+                                preis_jetzt_str = f"{preis_jetzt:.3f}"
+                                
+                                # Unsere eigene Delta-Pfeil Logik (Teurer = Rot, Billiger = Grün)
+                                if differenz > 0:
+                                    d_color = "#ff2b2b" # Streamlit Rot
+                                    d_text = f"▲ +{differenz:.3f} €"
+                                elif differenz < 0:
+                                    d_color = "#09ab3b" # Streamlit Grün
+                                    d_text = f"▼ -{abs(differenz):.3f} €"
+                                else:
+                                    d_color = "gray"
+                                    d_text = "► ±0.000 €"
+                                
+                                # Unser HTML für die 9 oben PLUS dem farbigen Delta-Pfeil
+                                st.markdown(f"""
+                                <div class="pro-metric">
+                                    <div style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 4px;">Aktueller Preis</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; line-height: 1;">
+                                        {preis_jetzt_str[:-1]}<sup style="font-size: 0.6em;">{preis_jetzt_str[-1]}</sup> €
+                                    </div>
+                                    <div style="color: {d_color}; font-size: 0.9rem; font-weight: bold; margin-top: 8px;">
+                                        {d_text}
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
                             else:
                                 st.metric("Aktueller Preis", f"{preis_jetzt:.2f} €", delta=f"{differenz:+.2f} €", delta_color="inverse")
+                                
                         with c3:
                             if st.session_state.preis_modus == "Klassisch (3-stellig, wie an der Zapfsäule)":
-                                st.metric("Preis damals", f"{preis_damals:.3f} €")
+                                preis_damals_str = f"{preis_damals:.3f}"
+                                st.markdown(f"""
+                                <div class="pro-metric" style="height: 100%;">
+                                    <div style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 4px;">Preis damals</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; line-height: 1;">
+                                        {preis_damals_str[:-1]}<sup style="font-size: 0.6em;">{preis_damals_str[-1]}</sup> €
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
                             else:
                                 st.metric("Preis damals", f"{preis_damals:.2f} €")
-                        st.divider()
 
     elif menue == "§ Impressum": rechtliches.zeige_impressum()
     elif menue == "⛨ Datenschutz": rechtliches.zeige_datenschutz()
