@@ -149,7 +149,7 @@ with c_title:
     st.title("Wuppertal tankt")
 
 # --- NAVIGATION ---
-menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich", "§ Impressum", "⛨ Datenschutz"])
+menue = st.selectbox("Navigation", ["✦ Übersicht", "◎ Umkreissuche", "⇄ Preis-Vergleich"])
 st.divider()
 
 df = lade_daten()
@@ -369,15 +369,62 @@ if not df.empty:
                             else:
                                 st.metric("Preis damals", f"{preis_damals:.2f} €")
 
-    elif menue == "§ Impressum": rechtliches.zeige_impressum()
-    elif menue == "⛨ Datenschutz": rechtliches.zeige_datenschutz()
 
-# --- Hölter Digital Branding als Footer ---
+# (Hier enden deine vorherigen Code-Blöcke für den Preis-Vergleich)
+
+# --- RECHTLICHES (POP-UPS) ---
+@st.dialog("Impressum")
+def open_impressum():
+    rechtliches.zeige_impressum()
+
+@st.dialog("Datenschutz")
+def open_datenschutz():
+    rechtliches.zeige_datenschutz()
+
+# --- RECHTLICHES (POP-UPS) ---
+@st.dialog("Impressum")
+def open_impressum():
+    rechtliches.zeige_impressum()
+
+@st.dialog("Datenschutz")
+def open_datenschutz():
+    rechtliches.zeige_datenschutz()
+
+# --- FOOTER BEREICH ---
 st.markdown("---") 
 
+# CSS-Trick: "Tertiary" Buttons exakt wie die Text-Links auf hoelter-digital.de aussehen lassen
+st.markdown(f"""
+<style>
+button[kind="tertiary"] {{
+    background-color: transparent !important;
+    padding: 0 !important;
+}}
+button[kind="tertiary"] * {{
+    color: #8b949e !important;
+    font-size: 0.9rem !important;
+}}
+button[kind="tertiary"]:hover * {{
+    color: {HOELTER_BLAU} !important;
+    text-decoration: underline !important;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# Die Links schön nah beieinander mittig zentrieren
+col_leer1, col_imp, col_dat, col_leer2 = st.columns([3, 1, 1, 3])
+with col_imp:
+    if st.button("Impressum", type="tertiary", use_container_width=True):
+        open_impressum()
+with col_dat:
+    if st.button("Datenschutz", type="tertiary", use_container_width=True):
+        open_datenschutz()
+
+# Dein bestehendes Hölter Digital Branding inkl. Copyright-Hinweis
 footer_html = """
-<div style="text-align: center; color: #8b949e; font-size: 0.8rem;">
-    <p>Datenquelle: <b><a href="https://www.tankerkoenig.de" target="_blank" style="color: #8b949e;">Tankerkönig.de</a></b> 
+<div style="text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: -5px;">
+    <p>© 2026 Hölter Digital</p>
+    <p style="margin-top: 10px;">Datenquelle: <b><a href="https://www.tankerkoenig.de" target="_blank" style="color: #8b949e;">Tankerkönig.de</a></b> 
     | Rohdaten der MTS-K (Bundeskartellamt)</p>
 </div>
 <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; margin-bottom: 20px;">
