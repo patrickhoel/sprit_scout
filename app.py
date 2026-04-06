@@ -15,8 +15,8 @@ st.set_page_config(
     page_icon="logo.png", 
     layout="wide",
     menu_items={
-        'Get Help': 'https://wuppertaltankt.hoelter-digital.de',
-        'Report a bug': "https://wuppertaltankt.hoelter-digital.de",
+        'Get Help': 'https://hoelter-digital.de/impressum.html',
+        'Report a bug': "mailto:patrick@hoelter-digital.de?subject=Bug-Report%20Sprit-App",
         'About': "# Wuppertal Tankt 2.0\nEntscheidungshilfe für Spritpreise in Wuppertal."
     }
 )
